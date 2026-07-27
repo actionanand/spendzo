@@ -21,6 +21,7 @@ yarn-error.log
 *.launch
 .settings/
 *.sublime-workspace
+# /reference
 
 # Visual Studio Code
 .vscode/*
@@ -44,3 +45,10 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Generated Android project, signing material and release binaries
+/android
+/release/*
+!/release/.gitkeep
+*.jks
+*.keystore

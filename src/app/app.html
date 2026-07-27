@@ -1,44 +1,1453 @@
-<style>
-  :host {
-    display: block;
-    min-height: 100dvh;
-    color: #17202a;
-    background: #f6f8fb;
-    font-family: Arial, Helvetica, sans-serif;
-  }
+@if (!store.initialized()) {
+  <main class="splash" aria-label="Spendzo is loading">
+    <img ngSrc="spendzo.png" width="144" height="144" alt="" priority />
+    <strong>Spendzo</strong>
+    <span>Making every rupee count</span>
+  </main>
+} @else if (locked()) {
+  <main class="lock-screen">
+    <section class="lock-card" aria-labelledby="unlock-title">
+      <img ngSrc="spendzo.png" width="88" height="88" alt="" priority />
+      <div>
+        <p class="eyebrow">WELCOME BACK</p>
+        <h1 id="unlock-title">Unlock Spendzo</h1>
+        <p>Your financial data stays on this device.</p>
+      </div>
+      <form [formGroup]="unlockForm" (ngSubmit)="unlock()">
+        <label for="unlock-pin">PIN</label>
+        <input
+          id="unlock-pin"
+          formControlName="pin"
+          inputmode="numeric"
+          autocomplete="current-password"
+          maxlength="8"
+          type="password"
+        />
+        @if (formError()) {
+          <p class="form-error" role="alert">{{ formError() }}</p>
+        }
+        <button class="primary-button full" type="submit">
+          <svg lucideIcon="unlock" aria-hidden="true"></svg>
+          Unlock
+        </button>
+      </form>
+      @if (store.settings().biometricEnabled && security.biometricAvailable) {
+        <button class="secondary-button full" type="button" (click)="security.requestBiometric()">
+          <svg lucideIcon="fingerprint" aria-hidden="true"></svg>
+          Use fingerprint
+        </button>
+      }
+    </section>
+  </main>
+} @else {
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">
+          <img ngSrc="spendzo.png" width="42" height="42" alt="" priority />
+        </span>
+        <span>
+          <strong>Spendzo</strong>
+          <small>{{ currentCycleLabel() }}</small>
+        </span>
+      </div>
+      <button
+        class="icon-button"
+        type="button"
+        aria-label="Open settings"
+        (click)="navigate('settings')"
+      >
+        <svg lucideIcon="settings-2" aria-hidden="true"></svg>
+      </button>
+    </header>
 
-  main {
-    display: grid;
-    min-height: 100dvh;
-    place-items: center;
-    padding: 2rem;
-    text-align: center;
-  }
+    <main id="main-content" class="content" tabindex="-1">
+      @if (store.error()) {
+        <div class="notice danger-notice" role="alert">
+          <svg lucideIcon="triangle-alert" aria-hidden="true"></svg>
+          <span>{{ store.error() }}</span>
+        </div>
+      }
 
-  .intro {
-    max-width: 36rem;
-  }
+      @switch (page()) {
+        @case ('home') {
+          <section class="page-heading">
+            <div>
+              <p class="eyebrow">CURRENT BUDGET CYCLE</p>
+              <h1>Good {{ daysRemaining() > 15 ? 'start' : 'progress' }}</h1>
+              <p>Here is how your money is doing today.</p>
+            </div>
+            <button class="secondary-button desktop-action" type="button" (click)="openIncome()">
+              <svg lucideIcon="circle-plus" aria-hidden="true"></svg>
+              Add income
+            </button>
+          </section>
 
-  h1 {
-    margin: 0;
-    font-size: clamp(2rem, 6vw, 4rem);
-    font-weight: 700;
-    line-height: 1.1;
-  }
+          @if (store.activeCycle().totalBudgetMinor === 0) {
+            <aside class="notice setup-notice" aria-labelledby="budget-setup-title">
+              <span class="notice-icon"><svg lucideIcon="sparkles" aria-hidden="true"></svg></span>
+              <div>
+                <strong id="budget-setup-title">Set up your first monthly budget</strong>
+                <p>Add a budget and income to unlock projections, savings and limit warnings.</p>
+              </div>
+              <button class="primary-button" type="button" (click)="openBudget()">
+                Set budget
+              </button>
+            </aside>
+          }
 
-  p {
-    margin: 1rem 0 0;
-    color: #415164;
-    font-size: 1.125rem;
-    line-height: 1.6;
-  }
-</style>
+          @if (store.budgetUsedPercentage() >= 100) {
+            <aside class="notice danger-notice">
+              <svg lucideIcon="octagon-alert" aria-hidden="true"></svg>
+              <span
+                >Your overall budget is exceeded by
+                {{ formatMoney(-store.budgetRemainingMinor()) }}.</span
+              >
+            </aside>
+          } @else if (store.budgetUsedPercentage() >= store.settings().warningThresholdPercentage) {
+            <aside class="notice warning-notice">
+              <svg lucideIcon="triangle-alert" aria-hidden="true"></svg>
+              <span>You have used {{ store.budgetUsedPercentage() }}% of this cycle's budget.</span>
+            </aside>
+          }
 
-<main>
-  <section class="intro" aria-labelledby="page-title">
-    <h1 id="page-title">spendzo</h1>
-    <p>A simple default project template ready to clone and build from.</p>
-  </section>
-</main>
+          <section class="hero-card" aria-labelledby="budget-overview-title">
+            <div class="hero-top">
+              <div>
+                <p id="budget-overview-title">Available to spend</p>
+                <strong>{{ formatMoney(store.budgetRemainingMinor()) }}</strong>
+                <span>of {{ formatMoney(store.activeCycle().totalBudgetMinor) }} budget</span>
+              </div>
+              <div
+                class="ring"
+                [style.--progress]="store.budgetUsedPercentage() + '%'"
+                [attr.aria-label]="store.budgetUsedPercentage() + '% of budget used'"
+                role="img"
+              >
+                <span>{{ store.budgetUsedPercentage() }}%</span>
+                <small>used</small>
+              </div>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <span [style.width.%]="clampPercent(store.budgetUsedPercentage())"></span>
+            </div>
+            <div class="hero-foot">
+              <span
+                ><svg lucideIcon="calendar-days" aria-hidden="true"></svg>{{ daysRemaining() }} days
+                left</span
+              >
+              <span
+                ><svg lucideIcon="gauge" aria-hidden="true"></svg
+                >{{ formatMoney(averageDailyMinor()) }}/day</span
+              >
+              <span
+                ><svg lucideIcon="trending-up" aria-hidden="true"></svg
+                >{{ formatMoney(projectedMinor()) }} projected</span
+              >
+            </div>
+          </section>
 
-<router-outlet />
+          <section class="summary-grid" aria-label="Cycle summary">
+            <article class="summary-card">
+              <span class="summary-icon income"
+                ><svg lucideIcon="wallet-cards" aria-hidden="true"></svg
+              ></span>
+              <p>Total income</p>
+              <strong>{{ formatMoney(store.totalIncomeMinor()) }}</strong>
+              <small>{{ store.cycleIncomes().length }} income sources</small>
+            </article>
+            <article class="summary-card">
+              <span class="summary-icon expense"
+                ><svg lucideIcon="receipt-indian-rupee" aria-hidden="true"></svg
+              ></span>
+              <p>Total expenses</p>
+              <strong>{{ formatMoney(store.totalExpensesMinor()) }}</strong>
+              <small>{{ store.cycleExpenses().length }} transactions</small>
+            </article>
+            <article class="summary-card">
+              <span class="summary-icon savings"
+                ><svg lucideIcon="piggy-bank" aria-hidden="true"></svg
+              ></span>
+              <p>Savings</p>
+              <strong>{{ formatMoney(store.savingsMinor()) }}</strong>
+              <small>{{ store.savingsPercentage() }}% of income</small>
+            </article>
+            <article class="summary-card">
+              <span class="summary-icon budget"
+                ><svg lucideIcon="landmark" aria-hidden="true"></svg
+              ></span>
+              <p>Monthly budget</p>
+              <strong>{{ formatMoney(store.activeCycle().totalBudgetMinor) }}</strong>
+              <small>{{ cycleProgress() }}% of cycle elapsed</small>
+            </article>
+          </section>
+
+          <section class="quick-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">SHORTCUTS</p>
+                <h2>Quick actions</h2>
+              </div>
+            </div>
+            <div class="quick-grid">
+              <button type="button" (click)="openExpense()">
+                <span><svg lucideIcon="receipt-text" aria-hidden="true"></svg></span>
+                <strong>Add expense</strong>
+                <small>Record a purchase</small>
+              </button>
+              <button type="button" (click)="openIncome()">
+                <span><svg lucideIcon="badge-indian-rupee" aria-hidden="true"></svg></span>
+                <strong>Add income</strong>
+                <small>Salary or other income</small>
+              </button>
+              <button type="button" (click)="openBudget()">
+                <span><svg lucideIcon="sliders-horizontal" aria-hidden="true"></svg></span>
+                <strong>Manage budget</strong>
+                <small>Plan this cycle</small>
+              </button>
+              <button type="button" (click)="navigate('statistics')">
+                <span><svg lucideIcon="chart-no-axes-combined" aria-hidden="true"></svg></span>
+                <strong>Statistics</strong>
+                <small>Understand your spend</small>
+              </button>
+            </div>
+          </section>
+
+          <div class="dashboard-grid">
+            <section class="panel category-panel" aria-labelledby="category-progress-title">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">SPENDING LIMITS</p>
+                  <h2 id="category-progress-title">Category progress</h2>
+                </div>
+                <button class="text-button" type="button" (click)="navigate('budgets')">
+                  Manage
+                </button>
+              </div>
+              @if (store.categorySummaries()[0]?.spentMinor) {
+                <div class="category-list">
+                  @for (
+                    summary of store.categorySummaries().slice(0, 5);
+                    track summary.category.id
+                  ) {
+                    @if (summary.spentMinor > 0) {
+                      <article class="category-row">
+                        <span
+                          class="category-icon"
+                          [style.--category-colour]="summary.category.colour"
+                        >
+                          <svg
+                            [lucideIcon]="summary.category.lucideIconName"
+                            aria-hidden="true"
+                          ></svg>
+                        </span>
+                        <div>
+                          <header>
+                            <strong>{{ summary.category.name }}</strong>
+                            <span>{{ formatMoney(summary.spentMinor) }}</span>
+                          </header>
+                          <div class="progress-track slim" aria-hidden="true">
+                            <span
+                              [class.over]="summary.usedPercentage > 100"
+                              [style.width.%]="clampPercent(summary.usedPercentage || 4)"
+                            ></span>
+                          </div>
+                          <small>
+                            @if (summary.limitMinor) {
+                              {{ summary.usedPercentage }}% of {{ formatMoney(summary.limitMinor) }}
+                            } @else {
+                              No limit set
+                            }
+                          </small>
+                        </div>
+                      </article>
+                    }
+                  }
+                </div>
+              } @else {
+                <div class="empty-compact">
+                  <svg lucideIcon="chart-pie" aria-hidden="true"></svg>
+                  <p>No category spending yet.</p>
+                </div>
+              }
+            </section>
+
+            <section class="panel recent-panel" aria-labelledby="recent-title">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">LATEST ACTIVITY</p>
+                  <h2 id="recent-title">Recent expenses</h2>
+                </div>
+                <button class="text-button" type="button" (click)="navigate('transactions')">
+                  View all
+                </button>
+              </div>
+              @if (store.recentExpenses().length) {
+                <div class="transaction-list">
+                  @for (expense of store.recentExpenses(); track expense.id) {
+                    <button class="transaction-row" type="button" (click)="openExpense(expense)">
+                      <span
+                        class="category-icon"
+                        [style.--category-colour]="categoryById(expense.categoryId)?.colour"
+                      >
+                        <svg [lucideIcon]="categoryIcon(expense)" aria-hidden="true"></svg>
+                      </span>
+                      <span class="transaction-main">
+                        <strong>{{
+                          expense.title || categoryById(expense.categoryId)?.name
+                        }}</strong>
+                        <small
+                          >{{ expense.transactionDate | date: 'd MMM' }} ·
+                          {{ categoryById(expense.categoryId)?.name }}</small
+                        >
+                      </span>
+                      <strong class="amount">−{{ formatMoney(expense.amountMinor, true) }}</strong>
+                    </button>
+                  }
+                </div>
+              } @else {
+                <div class="empty-compact">
+                  <svg lucideIcon="receipt-text" aria-hidden="true"></svg>
+                  <p>No expenses recorded for this cycle.</p>
+                  <button class="text-button" type="button" (click)="openExpense()">
+                    Add your first expense
+                  </button>
+                </div>
+              }
+            </section>
+          </div>
+        }
+
+        @case ('transactions') {
+          <section class="page-heading">
+            <div>
+              <p class="eyebrow">COMPLETE HISTORY</p>
+              <h1>Transactions</h1>
+              <p>Search, filter and review every expense.</p>
+            </div>
+            <div class="heading-actions">
+              <button class="secondary-button" type="button" (click)="openExpenseExport('PDF')">
+                <svg lucideIcon="file-text" aria-hidden="true"></svg>
+                Export
+              </button>
+              <button class="primary-button" type="button" (click)="openExpense()">
+                <svg lucideIcon="plus" aria-hidden="true"></svg>
+                Add expense
+              </button>
+            </div>
+          </section>
+
+          <section class="filter-bar" aria-label="Transaction filters">
+            <label class="search-field">
+              <span class="visually-hidden">Search transactions</span>
+              <svg lucideIcon="search" aria-hidden="true"></svg>
+              <input
+                type="search"
+                placeholder="Search merchant, notes or amount"
+                [value]="transactionQuery()"
+                (input)="changeTransactionQuery($event)"
+              />
+            </label>
+            <app-select-picker
+              class="filter-picker"
+              sheetTitle="Filter transactions"
+              [options]="categoryFilterOptions()"
+              [value]="categoryFilter()"
+              (valueChange)="changeCategoryFilter($event)"
+            />
+          </section>
+
+          <div class="filter-summary">
+            <span>{{ filteredExpenses().length }} transactions</span>
+            <strong>{{ formatMoney(filteredTotalMinor(), true) }}</strong>
+          </div>
+
+          <section class="panel transaction-history" aria-label="Filtered expenses">
+            @if (filteredExpenses().length) {
+              @for (expense of filteredExpenses(); track expense.id) {
+                <article class="history-row">
+                  <button class="history-main" type="button" (click)="openExpense(expense)">
+                    <span
+                      class="category-icon"
+                      [style.--category-colour]="categoryById(expense.categoryId)?.colour"
+                    >
+                      <svg [lucideIcon]="categoryIcon(expense)" aria-hidden="true"></svg>
+                    </span>
+                    <span>
+                      <strong>{{ expense.title || categoryById(expense.categoryId)?.name }}</strong>
+                      <small>
+                        {{ expense.transactionDate | date: 'EEE, d MMM y' }}
+                        @if (expense.paymentMethod) {
+                          · {{ expense.paymentMethod }}
+                        }
+                      </small>
+                      @if (expense.notes) {
+                        <span class="notes"
+                          ><svg lucideIcon="notebook-pen" aria-hidden="true"></svg> Note</span
+                        >
+                      }
+                    </span>
+                  </button>
+                  <div class="history-amount">
+                    <strong>−{{ formatMoney(expense.amountMinor, true) }}</strong>
+                    <small>{{ categoryById(expense.categoryId)?.name }}</small>
+                  </div>
+                  <button
+                    class="icon-button danger"
+                    type="button"
+                    [attr.aria-label]="'Delete ' + (expense.title || 'expense')"
+                    (click)="deleteExpense(expense)"
+                  >
+                    <svg lucideIcon="trash-2" aria-hidden="true"></svg>
+                  </button>
+                </article>
+              }
+            } @else {
+              <div class="empty-state">
+                <span><svg lucideIcon="search-x" aria-hidden="true"></svg></span>
+                <h2>No matching expenses</h2>
+                <p>Try another search or add your first expense to start tracking your budget.</p>
+                <button class="primary-button" type="button" (click)="openExpense()">
+                  Add expense
+                </button>
+              </div>
+            }
+          </section>
+        }
+
+        @case ('statistics') {
+          <section class="page-heading">
+            <div>
+              <p class="eyebrow">MONEY INSIGHTS</p>
+              <h1>Statistics</h1>
+              <p>Understand patterns without losing the exact numbers.</p>
+            </div>
+          </section>
+
+          <div class="period-tabs" role="group" aria-label="Statistics period">
+            @for (
+              period of ['Current cycle', '3 months', '6 months', '1 year', 'All time'];
+              track period
+            ) {
+              <button
+                type="button"
+                [class.active]="statisticsPeriod() === period"
+                (click)="statisticsPeriod.set(period)"
+              >
+                {{ period }}
+              </button>
+            }
+          </div>
+
+          <section class="insight-grid" aria-label="Key insights">
+            <article>
+              <span><svg lucideIcon="arrow-down-right" aria-hidden="true"></svg></span>
+              <p>Average daily spend</p>
+              <strong>{{ formatMoney(averageDailyMinor()) }}</strong>
+            </article>
+            <article>
+              <span><svg lucideIcon="telescope" aria-hidden="true"></svg></span>
+              <p>Projected cycle end</p>
+              <strong>{{ formatMoney(projectedMinor()) }}</strong>
+            </article>
+            <article>
+              <span><svg lucideIcon="badge-alert" aria-hidden="true"></svg></span>
+              <p>Over-budget categories</p>
+              <strong>{{ overLimitCategories().length }}</strong>
+            </article>
+          </section>
+
+          <div class="statistics-grid">
+            <section class="panel chart-panel" aria-labelledby="cash-flow-title">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">{{ statisticsPeriod().toUpperCase() }}</p>
+                  <h2 id="cash-flow-title">Income, expenses and savings</h2>
+                </div>
+              </div>
+              <app-report-chart
+                kind="column"
+                [labels]="cashFlowChartLabels"
+                [values]="cashFlowChartValues()"
+                [colours]="cashFlowChartColours"
+                [accessibleLabel]="cashFlowChartLabel()"
+                [theme]="store.settings().theme"
+              />
+              <dl class="chart-summary">
+                <div>
+                  <dt>Income</dt>
+                  <dd>{{ formatMoney(statisticsIncomeMinor()) }}</dd>
+                </div>
+                <div>
+                  <dt>Expenses</dt>
+                  <dd>{{ formatMoney(statisticsExpenseMinor()) }}</dd>
+                </div>
+                <div>
+                  <dt>Savings</dt>
+                  <dd>
+                    {{
+                      formatMoney(
+                        statisticsIncomeMinor() > statisticsExpenseMinor()
+                          ? statisticsIncomeMinor() - statisticsExpenseMinor()
+                          : 0
+                      )
+                    }}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="panel chart-panel" aria-labelledby="category-chart-title">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">BREAKDOWN</p>
+                  <h2 id="category-chart-title">Spending by category</h2>
+                </div>
+              </div>
+              @if (categoryChartData().length) {
+                <app-report-chart
+                  kind="doughnut"
+                  [labels]="categoryChartLabels()"
+                  [values]="categoryChartValues()"
+                  [colours]="categoryChartColours()"
+                  [accessibleLabel]="categoryChartLabel()"
+                  [theme]="store.settings().theme"
+                />
+                <dl class="chart-summary category-summary">
+                  @for (item of categoryChartData(); track item.label) {
+                    <div>
+                      <dt>
+                        <span class="legend-dot" [style.background]="item.colour"></span>
+                        {{ item.label }}
+                      </dt>
+                      <dd>{{ formatMoney(item.value * 100) }}</dd>
+                    </div>
+                  }
+                </dl>
+              } @else {
+                <div class="empty-compact">
+                  <svg lucideIcon="chart-no-axes-combined" aria-hidden="true"></svg>
+                  <p>Add expenses to see category insights.</p>
+                </div>
+              }
+            </section>
+          </div>
+
+          <section class="panel chart-panel trend-panel" aria-labelledby="trend-chart-title">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">TIMELINE</p>
+                <h2 id="trend-chart-title">Spending trend</h2>
+              </div>
+            </div>
+            @if (spendingTrendData().labels.length) {
+              <app-report-chart
+                kind="line"
+                [labels]="spendingTrendData().labels"
+                [values]="spendingTrendData().daily"
+                [secondaryValues]="spendingTrendData().cumulative"
+                [datasetLabels]="spendingTrendDatasetLabels"
+                [colours]="spendingTrendColours"
+                [accessibleLabel]="spendingTrendLabel()"
+                [theme]="store.settings().theme"
+              />
+              <table class="visually-hidden">
+                <caption>
+                  Spending trend data
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Daily spending</th>
+                    <th scope="col">Cumulative spending</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (label of spendingTrendData().labels; track label; let index = $index) {
+                    <tr>
+                      <th scope="row">{{ label }}</th>
+                      <td>{{ formatMoney(spendingTrendData().daily[index] * 100) }}</td>
+                      <td>{{ formatMoney(spendingTrendData().cumulative[index] * 100) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            } @else {
+              <div class="empty-compact">
+                <svg lucideIcon="chart-no-axes-combined" aria-hidden="true"></svg>
+                <p>Add expenses to see a spending trend.</p>
+              </div>
+            }
+          </section>
+        }
+
+        @case ('budgets') {
+          <section class="page-heading">
+            <div>
+              <p class="eyebrow">PLAN WITH INTENTION</p>
+              <h1>Budget & income</h1>
+              <p>Keep spending limits and savings goals in one place.</p>
+            </div>
+            <button class="primary-button" type="button" (click)="openBudget()">
+              <svg lucideIcon="pencil" aria-hidden="true"></svg>
+              Edit budget
+            </button>
+          </section>
+
+          <section class="budget-overview">
+            <article class="panel budget-total">
+              <span><svg lucideIcon="landmark" aria-hidden="true"></svg></span>
+              <div>
+                <p>Cycle budget</p>
+                <strong>{{ formatMoney(store.activeCycle().totalBudgetMinor) }}</strong>
+                <small>{{ currentCycleLabel() }}</small>
+              </div>
+            </article>
+            <article class="panel budget-total">
+              <span><svg lucideIcon="target" aria-hidden="true"></svg></span>
+              <div>
+                <p>Savings target</p>
+                <strong>{{ formatMoney(store.activeCycle().savingsTargetMinor) }}</strong>
+                <small>{{ formatMoney(store.savingsMinor()) }} currently saved</small>
+              </div>
+            </article>
+            <article class="panel budget-total">
+              <span><svg lucideIcon="shield-plus" aria-hidden="true"></svg></span>
+              <div>
+                <p>Emergency allocation</p>
+                <strong>{{ formatMoney(store.activeCycle().emergencyAllocationMinor) }}</strong>
+                <small>Reserved inside this cycle</small>
+              </div>
+            </article>
+          </section>
+
+          <div class="budget-grid">
+            <section class="panel" aria-labelledby="income-title">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">CASH IN</p>
+                  <h2 id="income-title">Income sources</h2>
+                </div>
+                <button class="text-button" type="button" (click)="openIncome()">Add income</button>
+              </div>
+              @if (store.cycleIncomes().length) {
+                <div class="simple-list">
+                  @for (income of store.cycleIncomes(); track income.id) {
+                    <article>
+                      <span class="category-icon income"
+                        ><svg lucideIcon="badge-indian-rupee" aria-hidden="true"></svg
+                      ></span>
+                      <div>
+                        <strong>{{ income.sourceName }}</strong>
+                        <small
+                          >{{ income.incomeDate | date: 'd MMM y'
+                          }}{{ income.recurring ? ' · Recurring' : '' }}</small
+                        >
+                      </div>
+                      <strong>{{ formatMoney(income.amountMinor, true) }}</strong>
+                    </article>
+                  }
+                </div>
+              } @else {
+                <div class="empty-compact">
+                  <svg lucideIcon="wallet-minimal" aria-hidden="true"></svg>
+                  <p>No income configured for this cycle.</p>
+                </div>
+              }
+            </section>
+
+            <section class="panel categories-manage" aria-labelledby="limits-title">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">GUARDRAILS</p>
+                  <h2 id="limits-title">Category limits</h2>
+                </div>
+                <button class="text-button" type="button" (click)="openCategory()">
+                  New category
+                </button>
+              </div>
+              <div class="limit-list">
+                @for (summary of store.categorySummaries(); track summary.category.id) {
+                  <article>
+                    <span class="category-icon" [style.--category-colour]="summary.category.colour">
+                      <svg [lucideIcon]="summary.category.lucideIconName" aria-hidden="true"></svg>
+                    </span>
+                    <div>
+                      <strong>{{ summary.category.name }}</strong>
+                      <small>{{ formatMoney(summary.spentMinor) }} spent</small>
+                    </div>
+                    <label>
+                      <span class="visually-hidden"
+                        >{{ summary.category.name }} monthly limit in rupees</span
+                      >
+                      <span class="currency-prefix">₹</span>
+                      <input
+                        inputmode="decimal"
+                        [value]="summary.limitMinor ? summary.limitMinor / 100 : ''"
+                        placeholder="No limit"
+                        (change)="changeCategoryLimit(summary.category.id, $event)"
+                      />
+                    </label>
+                  </article>
+                }
+              </div>
+            </section>
+          </div>
+        }
+
+        @case ('settings') {
+          <section class="page-heading">
+            <div>
+              <p class="eyebrow">YOUR PREFERENCES</p>
+              <h1>Settings</h1>
+              <p>Security, appearance, budget cycles and data controls.</p>
+            </div>
+            @if (store.settings().pinEnabled) {
+              <button class="secondary-button" type="button" (click)="lockNow()">
+                <svg lucideIcon="lock-keyhole" aria-hidden="true"></svg>
+                Lock now
+              </button>
+            }
+          </section>
+
+          <div class="settings-layout">
+            <section class="settings-section" aria-labelledby="appearance-title">
+              <header>
+                <span><svg lucideIcon="palette" aria-hidden="true"></svg></span>
+                <div>
+                  <h2 id="appearance-title">Appearance</h2>
+                  <p>A premium green palette tuned for every system mode.</p>
+                </div>
+              </header>
+              <div class="theme-options" role="radiogroup" aria-label="Theme">
+                <button
+                  type="button"
+                  role="radio"
+                  [attr.aria-checked]="store.settings().theme === 'light'"
+                  [class.selected]="store.settings().theme === 'light'"
+                  (click)="changeTheme('light')"
+                >
+                  <svg lucideIcon="sun" aria-hidden="true"></svg>
+                  <span><strong>Light</strong><small>Bright and calm</small></span>
+                  <svg lucideIcon="circle-check" class="check" aria-hidden="true"></svg>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  [attr.aria-checked]="store.settings().theme === 'dark'"
+                  [class.selected]="store.settings().theme === 'dark'"
+                  (click)="changeTheme('dark')"
+                >
+                  <svg lucideIcon="moon-star" aria-hidden="true"></svg>
+                  <span><strong>Dark</strong><small>Deep forest canvas</small></span>
+                  <svg lucideIcon="circle-check" class="check" aria-hidden="true"></svg>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  [attr.aria-checked]="store.settings().theme === 'system'"
+                  [class.selected]="store.settings().theme === 'system'"
+                  (click)="changeTheme('system')"
+                >
+                  <svg lucideIcon="monitor-cog" aria-hidden="true"></svg>
+                  <span><strong>Automatic</strong><small>Follow your device</small></span>
+                  <svg lucideIcon="circle-check" class="check" aria-hidden="true"></svg>
+                </button>
+              </div>
+            </section>
+
+            <section class="settings-section" aria-labelledby="security-title">
+              <header>
+                <span><svg lucideIcon="shield-check" aria-hidden="true"></svg></span>
+                <div>
+                  <h2 id="security-title">Security</h2>
+                  <p>Optional local lock with a PIN and Android fingerprint fallback.</p>
+                </div>
+              </header>
+              <div class="setting-rows">
+                <div>
+                  <span>
+                    <strong>PIN protection</strong>
+                    <small>{{ store.settings().pinEnabled ? 'Enabled' : 'Not configured' }}</small>
+                  </span>
+                  @if (store.settings().pinEnabled) {
+                    <button class="secondary-button" type="button" (click)="openPin()">
+                      Change PIN
+                    </button>
+                  } @else {
+                    <button class="primary-button" type="button" (click)="openPin()">
+                      Enable PIN
+                    </button>
+                  }
+                </div>
+                <div>
+                  <span>
+                    <strong>Fingerprint unlock</strong>
+                    <small>
+                      @if (!security.biometricAvailable) {
+                        Available in the Android app
+                      } @else if (!store.settings().pinEnabled) {
+                        Create a PIN first
+                      } @else {
+                        Always falls back to your PIN
+                      }
+                    </small>
+                  </span>
+                  <button
+                    class="switch"
+                    type="button"
+                    role="switch"
+                    [disabled]="!security.biometricAvailable || !store.settings().pinEnabled"
+                    [attr.aria-checked]="store.settings().biometricEnabled"
+                    [class.on]="store.settings().biometricEnabled"
+                    (click)="toggleBiometric()"
+                  >
+                    <span></span>
+                  </button>
+                </div>
+                <div class="select-setting">
+                  <span
+                    ><strong>Auto-lock</strong
+                    ><small>After Spendzo enters the background</small></span
+                  >
+                  <app-select-picker
+                    sheetTitle="Auto-lock timing"
+                    [options]="autoLockOptions"
+                    [value]="autoLockValue()"
+                    [disabled]="!store.settings().pinEnabled"
+                    (valueChange)="changeAutoLock($event)"
+                  />
+                </div>
+                <label class="check-setting">
+                  <span
+                    ><strong>Lock in background</strong
+                    ><small>Protect data when switching apps</small></span
+                  >
+                  <input
+                    type="checkbox"
+                    [checked]="store.settings().lockInBackground"
+                    [disabled]="!store.settings().pinEnabled"
+                    (change)="changeLockInBackground($event)"
+                  />
+                </label>
+                @if (store.settings().pinEnabled) {
+                  <button class="danger-button" type="button" (click)="removePin()">
+                    <svg lucideIcon="shield-off" aria-hidden="true"></svg>
+                    Remove PIN protection
+                  </button>
+                }
+              </div>
+            </section>
+
+            <section class="settings-section" aria-labelledby="budget-settings-title">
+              <header>
+                <span><svg lucideIcon="calendar-range" aria-hidden="true"></svg></span>
+                <div>
+                  <h2 id="budget-settings-title">Budget cycle</h2>
+                  <p>Choose the day your monthly planning period begins.</p>
+                </div>
+              </header>
+              <div class="select-setting">
+                <span>
+                  <strong>Cycle start day</strong>
+                  <small>Short months automatically use their last valid day</small>
+                </span>
+                <app-select-picker
+                  sheetTitle="Budget cycle start day"
+                  [options]="cycleDayOptions"
+                  [value]="cycleStartValue()"
+                  (valueChange)="changeCycleStart($event)"
+                />
+              </div>
+              <div class="cycle-preview">
+                <svg lucideIcon="calendar-check-2" aria-hidden="true"></svg>
+                <span
+                  ><strong>Current cycle</strong><small>{{ currentCycleLabel() }}</small></span
+                >
+              </div>
+            </section>
+
+            <section class="settings-section" aria-labelledby="data-title">
+              <header>
+                <span><svg lucideIcon="database-backup" aria-hidden="true"></svg></span>
+                <div>
+                  <h2 id="data-title">Data</h2>
+                  <p>Portable local files. No account or cloud connection required.</p>
+                </div>
+              </header>
+              <div class="data-actions">
+                <button type="button" (click)="exportBackup()">
+                  <svg lucideIcon="download" aria-hidden="true"></svg>
+                  <span
+                    ><strong>Export backup</strong><small>Complete .budgetbackup file</small></span
+                  >
+                  <svg lucideIcon="chevron-right" aria-hidden="true"></svg>
+                </button>
+                <button type="button" (click)="openImport()">
+                  <svg lucideIcon="upload" aria-hidden="true"></svg>
+                  <span
+                    ><strong>Import backup</strong
+                    ><small>Preview before replacing data</small></span
+                  >
+                  <svg lucideIcon="chevron-right" aria-hidden="true"></svg>
+                </button>
+                <button type="button" (click)="openExpenseExport('CSV')">
+                  <svg lucideIcon="file-spreadsheet" aria-hidden="true"></svg>
+                  <span
+                    ><strong>Export expenses CSV</strong
+                    ><small>Choose a cycle, month or date range</small></span
+                  >
+                  <svg lucideIcon="chevron-right" aria-hidden="true"></svg>
+                </button>
+                <button type="button" (click)="openExpenseExport('PDF')">
+                  <svg lucideIcon="file-text" aria-hidden="true"></svg>
+                  <span
+                    ><strong>Export expenses PDF</strong
+                    ><small>Printable statement with category summary</small></span
+                  >
+                  <svg lucideIcon="chevron-right" aria-hidden="true"></svg>
+                </button>
+              </div>
+              <p class="unencrypted-warning">
+                <svg lucideIcon="info" aria-hidden="true"></svg>
+                Backups are not encrypted. Anyone with the file may be able to read its contents.
+              </p>
+            </section>
+          </div>
+        }
+      }
+    </main>
+
+    <button class="fab" type="button" aria-label="Add expense" (click)="openExpense()">
+      <svg lucideIcon="plus" aria-hidden="true"></svg>
+    </button>
+
+    <nav class="bottom-nav" aria-label="Primary navigation">
+      <button type="button" [class.active]="page() === 'home'" (click)="navigate('home')">
+        <svg lucideIcon="house" aria-hidden="true"></svg><span>Home</span>
+      </button>
+      <button
+        type="button"
+        [class.active]="page() === 'transactions'"
+        (click)="navigate('transactions')"
+      >
+        <svg lucideIcon="arrow-left-right" aria-hidden="true"></svg><span>Transactions</span>
+      </button>
+      <button
+        type="button"
+        [class.active]="page() === 'statistics'"
+        (click)="navigate('statistics')"
+      >
+        <svg lucideIcon="chart-no-axes-combined" aria-hidden="true"></svg><span>Statistics</span>
+      </button>
+      <button type="button" [class.active]="page() === 'budgets'" (click)="navigate('budgets')">
+        <svg lucideIcon="landmark" aria-hidden="true"></svg><span>Budgets</span>
+      </button>
+      <button type="button" [class.active]="page() === 'settings'" (click)="navigate('settings')">
+        <svg lucideIcon="settings-2" aria-hidden="true"></svg><span>Settings</span>
+      </button>
+    </nav>
+
+    @if (dialog()) {
+      <button
+        class="dialog-scrim"
+        type="button"
+        aria-label="Close dialog"
+        (click)="closeDialog()"
+      ></button>
+    }
+
+    @if (dialog() === 'expense') {
+      <section
+        class="dialog expense-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="expense-dialog-title"
+      >
+        <header>
+          <div>
+            <p class="eyebrow">
+              {{ editingExpenseId() ? 'UPDATE TRANSACTION' : 'NEW TRANSACTION' }}
+            </p>
+            <h2 id="expense-dialog-title">
+              {{ editingExpenseId() ? 'Edit expense' : 'Add expense' }}
+            </h2>
+          </div>
+          <button class="icon-button" type="button" aria-label="Close" (click)="closeDialog()">
+            <svg lucideIcon="x" aria-hidden="true"></svg>
+          </button>
+        </header>
+        <form [formGroup]="expenseForm" (ngSubmit)="saveExpense()">
+          <label class="amount-field">
+            <span>Amount in Rupees</span>
+            <span class="amount-input"
+              ><strong>₹</strong
+              ><input formControlName="amount" inputmode="decimal" placeholder="0.00"
+            /></span>
+          </label>
+          <div class="form-grid">
+            <app-select-picker
+              label="Category"
+              sheetTitle="Expense category"
+              [options]="categoryPickerOptions()"
+              [value]="expenseForm.controls.categoryId.value"
+              (valueChange)="changeExpenseCategory($event)"
+            />
+            <label><span>Date</span><input type="date" formControlName="transactionDate" /></label>
+            <label
+              ><span>Payment method <small>Optional</small></span
+              ><input formControlName="paymentMethod" placeholder="UPI, cash, card"
+            /></label>
+          </div>
+          <label
+            ><span>Merchant or title <small>Optional</small></span
+            ><input formControlName="title" placeholder="e.g. Local grocery store"
+          /></label>
+          <label
+            ><span>Notes <small>Optional</small></span
+            ><textarea formControlName="notes" rows="3" placeholder="Add useful details"></textarea>
+          </label>
+          <label
+            ><span>Tags <small>Comma separated</small></span
+            ><input formControlName="tags" placeholder="work, family"
+          /></label>
+          @if (formError()) {
+            <p class="form-error" role="alert">{{ formError() }}</p>
+          }
+          <footer>
+            <button class="secondary-button" type="button" (click)="cancelExpenseEdit()">
+              Cancel
+            </button>
+            <button class="secondary-button" type="button" (click)="saveExpense(true)">
+              Save & add another
+            </button>
+            <button class="primary-button" type="submit">
+              <svg lucideIcon="check" aria-hidden="true"></svg>Save expense
+            </button>
+          </footer>
+        </form>
+      </section>
+    }
+
+    @if (dialog() === 'income') {
+      <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="income-dialog-title">
+        <header>
+          <div>
+            <p class="eyebrow">CASH IN</p>
+            <h2 id="income-dialog-title">Add income</h2>
+          </div>
+          <button class="icon-button" type="button" aria-label="Close" (click)="closeDialog()">
+            <svg lucideIcon="x" aria-hidden="true"></svg>
+          </button>
+        </header>
+        <form [formGroup]="incomeForm" (ngSubmit)="saveIncome()">
+          <label><span>Source name</span><input formControlName="sourceName" /></label>
+          <label class="amount-field"
+            ><span>Amount in Rupees</span
+            ><span class="amount-input"
+              ><strong>₹</strong
+              ><input formControlName="amount" inputmode="decimal" placeholder="0.00" /></span
+          ></label>
+          <label><span>Date</span><input type="date" formControlName="incomeDate" /></label>
+          <label
+            ><span>Notes <small>Optional</small></span
+            ><textarea formControlName="notes" rows="3"></textarea>
+          </label>
+          <label class="check-setting"
+            ><span
+              ><strong>Monthly recurring</strong
+              ><small>Make it easy to copy next cycle</small></span
+            ><input type="checkbox" formControlName="recurring"
+          /></label>
+          @if (formError()) {
+            <p class="form-error" role="alert">{{ formError() }}</p>
+          }
+          <footer>
+            <button class="secondary-button" type="button" (click)="closeDialog()">Cancel</button
+            ><button class="primary-button" type="submit">Add income</button>
+          </footer>
+        </form>
+      </section>
+    }
+
+    @if (dialog() === 'budget') {
+      <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="budget-dialog-title">
+        <header>
+          <div>
+            <p class="eyebrow">CURRENT CYCLE</p>
+            <h2 id="budget-dialog-title">Budget plan</h2>
+          </div>
+          <button class="icon-button" type="button" aria-label="Close" (click)="closeDialog()">
+            <svg lucideIcon="x" aria-hidden="true"></svg>
+          </button>
+        </header>
+        <p class="dialog-copy">
+          Savings and remaining budget are calculated separately, so your plan can be lower than
+          your income.
+        </p>
+        <form [formGroup]="budgetForm" (ngSubmit)="saveBudget()">
+          <label
+            ><span>Total budget in Rupees</span
+            ><input formControlName="totalBudget" inputmode="decimal" placeholder="e.g. 50000"
+          /></label>
+          <label
+            ><span>Savings target <small>Optional</small></span
+            ><input formControlName="savingsTarget" inputmode="decimal" placeholder="e.g. 10000"
+          /></label>
+          <label
+            ><span>Emergency allocation <small>Optional</small></span
+            ><input
+              formControlName="emergencyAllocation"
+              inputmode="decimal"
+              placeholder="e.g. 5000"
+          /></label>
+          @if (formError()) {
+            <p class="form-error" role="alert">{{ formError() }}</p>
+          }
+          <footer>
+            <button class="secondary-button" type="button" (click)="closeDialog()">Cancel</button
+            ><button class="primary-button" type="submit">Save budget</button>
+          </footer>
+        </form>
+      </section>
+    }
+
+    @if (dialog() === 'category') {
+      <section
+        class="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="category-dialog-title"
+      >
+        <header>
+          <div>
+            <p class="eyebrow">CUSTOM CATEGORY</p>
+            <h2 id="category-dialog-title">New category</h2>
+          </div>
+          <button class="icon-button" type="button" aria-label="Close" (click)="closeDialog()">
+            <svg lucideIcon="x" aria-hidden="true"></svg>
+          </button>
+        </header>
+        <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()">
+          <label><span>Name</span><input formControlName="name" placeholder="e.g. Pets" /></label>
+          <div class="form-grid">
+            <app-select-picker
+              label="Icon"
+              sheetTitle="Category icon"
+              [options]="categoryIconOptions"
+              [value]="categoryForm.controls.lucideIconName.value"
+              (valueChange)="changeCategoryIcon($event)"
+            />
+            <label><span>Colour</span><input type="color" formControlName="colour" /></label>
+          </div>
+          <label
+            ><span>Monthly limit <small>Optional</small></span
+            ><input formControlName="monthlyLimit" inputmode="decimal" placeholder="No limit"
+          /></label>
+          @if (formError()) {
+            <p class="form-error" role="alert">{{ formError() }}</p>
+          }
+          <footer>
+            <button class="secondary-button" type="button" (click)="closeDialog()">Cancel</button
+            ><button class="primary-button" type="submit">Create category</button>
+          </footer>
+        </form>
+      </section>
+    }
+
+    @if (dialog() === 'pin') {
+      <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="pin-dialog-title">
+        <header>
+          <div>
+            <p class="eyebrow">DEVICE SECURITY</p>
+            <h2 id="pin-dialog-title">
+              {{ store.settings().pinEnabled ? 'Change PIN' : 'Create a PIN' }}
+            </h2>
+          </div>
+          <button class="icon-button" type="button" aria-label="Close" (click)="closeDialog()">
+            <svg lucideIcon="x" aria-hidden="true"></svg>
+          </button>
+        </header>
+        <div class="notice warning-notice">
+          <svg lucideIcon="key-round" aria-hidden="true"></svg
+          ><span
+            >There is no PIN recovery. Forgetting it can prevent access to the app until its data is
+            cleared.</span
+          >
+        </div>
+        <form [formGroup]="pinForm" (ngSubmit)="savePin()">
+          <label
+            ><span>New PIN</span
+            ><input
+              formControlName="pin"
+              type="password"
+              inputmode="numeric"
+              autocomplete="new-password"
+              minlength="4"
+              maxlength="8"
+          /></label>
+          <label
+            ><span>Confirm PIN</span
+            ><input
+              formControlName="confirmation"
+              type="password"
+              inputmode="numeric"
+              autocomplete="new-password"
+              minlength="4"
+              maxlength="8"
+          /></label>
+          @if (formError()) {
+            <p class="form-error" role="alert">{{ formError() }}</p>
+          }
+          <footer>
+            <button class="secondary-button" type="button" (click)="closeDialog()">Cancel</button
+            ><button class="primary-button" type="submit">Save PIN</button>
+          </footer>
+        </form>
+      </section>
+    }
+
+    @if (dialog() === 'import') {
+      <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="import-dialog-title">
+        <header>
+          <div>
+            <p class="eyebrow">RESTORE DATA</p>
+            <h2 id="import-dialog-title">Import backup</h2>
+          </div>
+          <button class="icon-button" type="button" aria-label="Close" (click)="closeDialog()">
+            <svg lucideIcon="x" aria-hidden="true"></svg>
+          </button>
+        </header>
+        <label class="file-picker"
+          ><svg lucideIcon="file-up" aria-hidden="true"></svg
+          ><span
+            ><strong>Choose .budgetbackup file</strong
+            ><small>The file is validated before any data changes.</small></span
+          ><input
+            type="file"
+            accept=".budgetbackup,application/json"
+            (change)="chooseBackup($event)"
+        /></label>
+        @if (backupPreview(); as preview) {
+          <div class="preview-grid">
+            <div>
+              <strong>{{ preview.expenseCount }}</strong
+              ><small>Expenses</small>
+            </div>
+            <div>
+              <strong>{{ preview.incomeCount }}</strong
+              ><small>Income entries</small>
+            </div>
+            <div>
+              <strong>{{ preview.categoryCount }}</strong
+              ><small>Categories</small>
+            </div>
+            <div>
+              <strong>{{ preview.cycleCount }}</strong
+              ><small>Budget cycles</small>
+            </div>
+          </div>
+          <fieldset class="import-options">
+            <legend>Restore mode</legend>
+            <label>
+              <input
+                type="radio"
+                name="import-mode"
+                value="merge"
+                [checked]="importMode() === 'merge'"
+                (change)="importMode.set('merge')"
+              />
+              <span
+                ><strong>Merge</strong><small>Add records while keeping current data</small></span
+              >
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="import-mode"
+                value="replace"
+                [checked]="importMode() === 'replace'"
+                (change)="importMode.set('replace')"
+              />
+              <span
+                ><strong>Replace</strong
+                ><small>Overwrite after creating a safety backup</small></span
+              >
+            </label>
+          </fieldset>
+          @if (importMode() === 'merge') {
+            <app-select-picker
+              class="duplicate-policy"
+              label="When record IDs already exist"
+              sheetTitle="Duplicate records"
+              [options]="duplicatePolicyOptions"
+              [value]="duplicatePolicy()"
+              (valueChange)="changeDuplicatePolicy($event)"
+            />
+          }
+        }
+        @if (formError()) {
+          <p class="form-error" role="alert">{{ formError() }}</p>
+        }
+        <div class="notice warning-notice">
+          <svg lucideIcon="triangle-alert" aria-hidden="true"></svg
+          ><span
+            >Replace creates a safety backup first. Merge uses record IDs to detect
+            duplicates.</span
+          >
+        </div>
+        <footer>
+          <button class="secondary-button" type="button" (click)="closeDialog()">Cancel</button
+          ><button
+            class="primary-button"
+            type="button"
+            [disabled]="!backupPreview()"
+            (click)="restoreBackup()"
+          >
+            {{ importMode() === 'replace' ? 'Replace & restore' : 'Merge backup' }}
+          </button>
+        </footer>
+      </section>
+    }
+
+    @if (dialog() === 'export') {
+      <section
+        class="dialog export-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-dialog-title"
+      >
+        <header>
+          <div>
+            <p class="eyebrow">PORTABLE REPORT</p>
+            <h2 id="export-dialog-title">Export expenses</h2>
+          </div>
+          <button class="icon-button" type="button" aria-label="Close" (click)="closeDialog()">
+            <svg lucideIcon="x" aria-hidden="true"></svg>
+          </button>
+        </header>
+
+        <fieldset class="export-formats">
+          <legend>File format</legend>
+          <label [class.selected]="exportFormat() === 'PDF'">
+            <input
+              type="radio"
+              name="export-format"
+              value="PDF"
+              [checked]="exportFormat() === 'PDF'"
+              (change)="exportFormat.set('PDF')"
+            />
+            <svg lucideIcon="file-text" aria-hidden="true"></svg>
+            <span>
+              <strong>PDF statement</strong>
+              <small>Print-ready report with totals and category summary</small>
+            </span>
+          </label>
+          <label [class.selected]="exportFormat() === 'CSV'">
+            <input
+              type="radio"
+              name="export-format"
+              value="CSV"
+              [checked]="exportFormat() === 'CSV'"
+              (change)="exportFormat.set('CSV')"
+            />
+            <svg lucideIcon="file-spreadsheet" aria-hidden="true"></svg>
+            <span>
+              <strong>CSV spreadsheet</strong>
+              <small>UTF-8 data for Excel, Sheets or another finance app</small>
+            </span>
+          </label>
+        </fieldset>
+
+        <app-select-picker
+          label="Expense period"
+          sheetTitle="Choose export period"
+          [options]="exportRangeOptions"
+          [value]="exportRange()"
+          (valueChange)="changeExportRange($event)"
+        />
+
+        @if (exportRange() === 'CUSTOM') {
+          <div class="form-grid custom-export-range">
+            <label>
+              <span>Start date</span>
+              <input
+                type="date"
+                [value]="exportStartDate()"
+                (change)="changeExportStartDate($event)"
+              />
+            </label>
+            <label>
+              <span>End date</span>
+              <input type="date" [value]="exportEndDate()" (change)="changeExportEndDate($event)" />
+            </label>
+          </div>
+        }
+
+        <div class="notice export-notice">
+          <svg lucideIcon="shield-check" aria-hidden="true"></svg>
+          <span>
+            The file is created locally. On Android, Spendzo opens the secure system share and save
+            sheet without requesting broad storage access.
+          </span>
+        </div>
+        @if (formError()) {
+          <p class="form-error" role="alert">{{ formError() }}</p>
+        }
+        <footer>
+          <button class="secondary-button" type="button" (click)="closeDialog()">Cancel</button>
+          <button class="primary-button" type="button" (click)="exportExpenses()">
+            <svg lucideIcon="download" aria-hidden="true"></svg>
+            Export {{ exportFormat() }}
+          </button>
+        </footer>
+      </section>
+    }
+
+    @if (confirmation(); as request) {
+      <app-confirmation-dialog
+        [title]="request.title"
+        [message]="request.message"
+        [confirmLabel]="request.confirmLabel"
+        [tone]="request.tone"
+        (confirmed)="confirmRequestedAction()"
+        (cancelled)="cancelRequestedAction()"
+      />
+    }
+
+    @if (snackbar.message(); as message) {
+      <div
+        class="app-snackbar"
+        [class.warning]="message.tone === 'WARNING'"
+        [class.info]="message.tone === 'INFO'"
+        role="status"
+        aria-live="polite"
+      >
+        <svg
+          [lucideIcon]="
+            message.tone === 'WARNING'
+              ? 'triangle-alert'
+              : message.tone === 'INFO'
+                ? 'info'
+                : 'circle-check'
+          "
+          aria-hidden="true"
+        ></svg>
+        <span>{{ message.text }}</span>
+        @if (message.actionLabel) {
+          <button class="snackbar-action" type="button" (click)="snackbar.runAction()">
+            {{ message.actionLabel }}
+          </button>
+        }
+        <button
+          class="snackbar-close"
+          type="button"
+          aria-label="Dismiss notification"
+          (click)="snackbar.dismiss()"
+        >
+          <svg lucideIcon="x" aria-hidden="true"></svg>
+        </button>
+      </div>
+    }
+  </div>
+}

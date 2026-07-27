@@ -1,0 +1,1092 @@
+{
+  "application": "Spendzo",
+  "exportedAt": "2026-07-28T10:30:00.000Z",
+  "schemaVersion": 1,
+  "expenses": [
+    {
+      "id": "sample-expense-2026-03-01",
+      "amountMinor": 1850000,
+      "categoryId": "rent",
+      "transactionDate": "2026-03-01",
+      "title": "Apartment rent",
+      "notes": "Sample transaction for 2026-03",
+      "paymentMethod": "Bank transfer",
+      "tags": [
+        "home",
+        "fixed",
+        "sample"
+      ],
+      "createdAt": "2026-03-01T10:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-03-02",
+      "amountMinor": 239750,
+      "categoryId": "groceries",
+      "transactionDate": "2026-03-03",
+      "title": "Monthly groceries",
+      "notes": "Sample data for import, statistics, CSV and PDF export testing",
+      "paymentMethod": "UPI",
+      "tags": [
+        "home",
+        "essentials",
+        "sample"
+      ],
+      "createdAt": "2026-03-03T11:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-03-03",
+      "amountMinor": 102400,
+      "categoryId": "subscriptions",
+      "transactionDate": "2026-03-06",
+      "title": "Streaming and cloud",
+      "notes": "Sample transaction for 2026-03",
+      "paymentMethod": "Credit card",
+      "tags": [
+        "recurring",
+        "sample"
+      ],
+      "createdAt": "2026-03-06T12:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-03-04",
+      "amountMinor": 124000,
+      "categoryId": "transport",
+      "transactionDate": "2026-03-09",
+      "title": "Metro and cab rides",
+      "notes": "Sample transaction for 2026-03",
+      "paymentMethod": "UPI",
+      "tags": [
+        "commute",
+        "sample"
+      ],
+      "createdAt": "2026-03-09T13:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-03-05",
+      "amountMinor": 143750,
+      "categoryId": "dining",
+      "transactionDate": "2026-03-12",
+      "title": "Weekend dinner",
+      "notes": "Sample transaction for 2026-03",
+      "paymentMethod": "Credit card",
+      "tags": [
+        "family",
+        "sample"
+      ],
+      "createdAt": "2026-03-12T14:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-03-06",
+      "amountMinor": 228900,
+      "categoryId": "utilities",
+      "transactionDate": "2026-03-15",
+      "title": "Electricity and broadband",
+      "notes": "Sample transaction for 2026-03",
+      "paymentMethod": "UPI",
+      "tags": [
+        "home",
+        "bills",
+        "sample"
+      ],
+      "createdAt": "2026-03-15T15:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-03-07",
+      "amountMinor": 196800,
+      "categoryId": "groceries",
+      "transactionDate": "2026-03-18",
+      "title": "Fresh produce",
+      "notes": "Sample transaction for 2026-03",
+      "paymentMethod": "UPI",
+      "tags": [
+        "essentials",
+        "sample"
+      ],
+      "createdAt": "2026-03-18T16:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-03-08",
+      "amountMinor": 289150,
+      "categoryId": "shopping",
+      "transactionDate": "2026-03-21",
+      "title": "Household shopping",
+      "notes": "Sample transaction for 2026-03",
+      "paymentMethod": "Debit card",
+      "tags": [
+        "home",
+        "sample"
+      ],
+      "createdAt": "2026-03-21T17:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-03-09",
+      "amountMinor": 120500,
+      "categoryId": "entertainment",
+      "transactionDate": "2026-03-24",
+      "title": "Movie and snacks",
+      "notes": "Sample transaction for 2026-03",
+      "paymentMethod": "UPI",
+      "tags": [
+        "leisure",
+        "sample"
+      ],
+      "createdAt": "2026-03-24T10:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-03-10",
+      "amountMinor": 126000,
+      "categoryId": "dining",
+      "transactionDate": "2026-03-27",
+      "title": "Cafe visits",
+      "notes": "Sample transaction for 2026-03",
+      "paymentMethod": "UPI",
+      "tags": [
+        "leisure",
+        "sample"
+      ],
+      "createdAt": "2026-03-27T11:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-04-01",
+      "amountMinor": 1853700,
+      "categoryId": "rent",
+      "transactionDate": "2026-04-01",
+      "title": "Apartment rent",
+      "notes": "Sample transaction for 2026-04",
+      "paymentMethod": "Bank transfer",
+      "tags": [
+        "home",
+        "fixed",
+        "sample"
+      ],
+      "createdAt": "2026-04-01T10:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-04-02",
+      "amountMinor": 243450,
+      "categoryId": "groceries",
+      "transactionDate": "2026-04-03",
+      "title": "Monthly groceries",
+      "notes": "Sample data for import, statistics, CSV and PDF export testing",
+      "paymentMethod": "UPI",
+      "tags": [
+        "home",
+        "essentials",
+        "sample"
+      ],
+      "createdAt": "2026-04-03T11:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-04-03",
+      "amountMinor": 106100,
+      "categoryId": "subscriptions",
+      "transactionDate": "2026-04-06",
+      "title": "Streaming and cloud",
+      "notes": "Sample transaction for 2026-04",
+      "paymentMethod": "Credit card",
+      "tags": [
+        "recurring",
+        "sample"
+      ],
+      "createdAt": "2026-04-06T12:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-04-04",
+      "amountMinor": 127700,
+      "categoryId": "transport",
+      "transactionDate": "2026-04-09",
+      "title": "Metro and cab rides",
+      "notes": "Sample transaction for 2026-04",
+      "paymentMethod": "UPI",
+      "tags": [
+        "commute",
+        "sample"
+      ],
+      "createdAt": "2026-04-09T13:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-04-05",
+      "amountMinor": 147450,
+      "categoryId": "dining",
+      "transactionDate": "2026-04-12",
+      "title": "Weekend dinner",
+      "notes": "Sample transaction for 2026-04",
+      "paymentMethod": "Credit card",
+      "tags": [
+        "family",
+        "sample"
+      ],
+      "createdAt": "2026-04-12T14:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-04-06",
+      "amountMinor": 232600,
+      "categoryId": "utilities",
+      "transactionDate": "2026-04-15",
+      "title": "Electricity and broadband",
+      "notes": "Sample transaction for 2026-04",
+      "paymentMethod": "UPI",
+      "tags": [
+        "home",
+        "bills",
+        "sample"
+      ],
+      "createdAt": "2026-04-15T15:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-04-07",
+      "amountMinor": 200500,
+      "categoryId": "groceries",
+      "transactionDate": "2026-04-18",
+      "title": "Fresh produce",
+      "notes": "Sample transaction for 2026-04",
+      "paymentMethod": "UPI",
+      "tags": [
+        "essentials",
+        "sample"
+      ],
+      "createdAt": "2026-04-18T16:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-04-08",
+      "amountMinor": 292850,
+      "categoryId": "shopping",
+      "transactionDate": "2026-04-21",
+      "title": "Household shopping",
+      "notes": "Sample transaction for 2026-04",
+      "paymentMethod": "Debit card",
+      "tags": [
+        "home",
+        "sample"
+      ],
+      "createdAt": "2026-04-21T17:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-04-09",
+      "amountMinor": 124200,
+      "categoryId": "entertainment",
+      "transactionDate": "2026-04-24",
+      "title": "Movie and snacks",
+      "notes": "Sample transaction for 2026-04",
+      "paymentMethod": "UPI",
+      "tags": [
+        "leisure",
+        "sample"
+      ],
+      "createdAt": "2026-04-24T10:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-04-10",
+      "amountMinor": 129700,
+      "categoryId": "dining",
+      "transactionDate": "2026-04-27",
+      "title": "Cafe visits",
+      "notes": "Sample transaction for 2026-04",
+      "paymentMethod": "UPI",
+      "tags": [
+        "leisure",
+        "sample"
+      ],
+      "createdAt": "2026-04-27T11:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-05-01",
+      "amountMinor": 1857400,
+      "categoryId": "rent",
+      "transactionDate": "2026-05-01",
+      "title": "Apartment rent",
+      "notes": "Sample transaction for 2026-05",
+      "paymentMethod": "Bank transfer",
+      "tags": [
+        "home",
+        "fixed",
+        "sample"
+      ],
+      "createdAt": "2026-05-01T10:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-05-02",
+      "amountMinor": 247150,
+      "categoryId": "groceries",
+      "transactionDate": "2026-05-03",
+      "title": "Monthly groceries",
+      "notes": "Sample data for import, statistics, CSV and PDF export testing",
+      "paymentMethod": "UPI",
+      "tags": [
+        "home",
+        "essentials",
+        "sample"
+      ],
+      "createdAt": "2026-05-03T11:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-05-03",
+      "amountMinor": 109800,
+      "categoryId": "subscriptions",
+      "transactionDate": "2026-05-06",
+      "title": "Streaming and cloud",
+      "notes": "Sample transaction for 2026-05",
+      "paymentMethod": "Credit card",
+      "tags": [
+        "recurring",
+        "sample"
+      ],
+      "createdAt": "2026-05-06T12:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-05-04",
+      "amountMinor": 131400,
+      "categoryId": "transport",
+      "transactionDate": "2026-05-09",
+      "title": "Metro and cab rides",
+      "notes": "Sample transaction for 2026-05",
+      "paymentMethod": "UPI",
+      "tags": [
+        "commute",
+        "sample"
+      ],
+      "createdAt": "2026-05-09T13:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-05-05",
+      "amountMinor": 151150,
+      "categoryId": "dining",
+      "transactionDate": "2026-05-12",
+      "title": "Weekend dinner",
+      "notes": "Sample transaction for 2026-05",
+      "paymentMethod": "Credit card",
+      "tags": [
+        "family",
+        "sample"
+      ],
+      "createdAt": "2026-05-12T14:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-05-06",
+      "amountMinor": 236300,
+      "categoryId": "utilities",
+      "transactionDate": "2026-05-15",
+      "title": "Electricity and broadband",
+      "notes": "Sample transaction for 2026-05",
+      "paymentMethod": "UPI",
+      "tags": [
+        "home",
+        "bills",
+        "sample"
+      ],
+      "createdAt": "2026-05-15T15:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-05-07",
+      "amountMinor": 204200,
+      "categoryId": "groceries",
+      "transactionDate": "2026-05-18",
+      "title": "Fresh produce",
+      "notes": "Sample transaction for 2026-05",
+      "paymentMethod": "UPI",
+      "tags": [
+        "essentials",
+        "sample"
+      ],
+      "createdAt": "2026-05-18T16:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-05-08",
+      "amountMinor": 296550,
+      "categoryId": "shopping",
+      "transactionDate": "2026-05-21",
+      "title": "Household shopping",
+      "notes": "Sample transaction for 2026-05",
+      "paymentMethod": "Debit card",
+      "tags": [
+        "home",
+        "sample"
+      ],
+      "createdAt": "2026-05-21T17:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-05-09",
+      "amountMinor": 127900,
+      "categoryId": "entertainment",
+      "transactionDate": "2026-05-24",
+      "title": "Movie and snacks",
+      "notes": "Sample transaction for 2026-05",
+      "paymentMethod": "UPI",
+      "tags": [
+        "leisure",
+        "sample"
+      ],
+      "createdAt": "2026-05-24T10:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-05-10",
+      "amountMinor": 133400,
+      "categoryId": "dining",
+      "transactionDate": "2026-05-27",
+      "title": "Cafe visits",
+      "notes": "Sample transaction for 2026-05",
+      "paymentMethod": "UPI",
+      "tags": [
+        "leisure",
+        "sample"
+      ],
+      "createdAt": "2026-05-27T11:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-06-01",
+      "amountMinor": 1861100,
+      "categoryId": "rent",
+      "transactionDate": "2026-06-01",
+      "title": "Apartment rent",
+      "notes": "Sample transaction for 2026-06",
+      "paymentMethod": "Bank transfer",
+      "tags": [
+        "home",
+        "fixed",
+        "sample"
+      ],
+      "createdAt": "2026-06-01T10:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-06-02",
+      "amountMinor": 250850,
+      "categoryId": "groceries",
+      "transactionDate": "2026-06-03",
+      "title": "Monthly groceries",
+      "notes": "Sample data for import, statistics, CSV and PDF export testing",
+      "paymentMethod": "UPI",
+      "tags": [
+        "home",
+        "essentials",
+        "sample"
+      ],
+      "createdAt": "2026-06-03T11:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-06-03",
+      "amountMinor": 113500,
+      "categoryId": "subscriptions",
+      "transactionDate": "2026-06-06",
+      "title": "Streaming and cloud",
+      "notes": "Sample transaction for 2026-06",
+      "paymentMethod": "Credit card",
+      "tags": [
+        "recurring",
+        "sample"
+      ],
+      "createdAt": "2026-06-06T12:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-06-04",
+      "amountMinor": 135100,
+      "categoryId": "transport",
+      "transactionDate": "2026-06-09",
+      "title": "Metro and cab rides",
+      "notes": "Sample transaction for 2026-06",
+      "paymentMethod": "UPI",
+      "tags": [
+        "commute",
+        "sample"
+      ],
+      "createdAt": "2026-06-09T13:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-06-05",
+      "amountMinor": 154850,
+      "categoryId": "dining",
+      "transactionDate": "2026-06-12",
+      "title": "Weekend dinner",
+      "notes": "Sample transaction for 2026-06",
+      "paymentMethod": "Credit card",
+      "tags": [
+        "family",
+        "sample"
+      ],
+      "createdAt": "2026-06-12T14:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-06-06",
+      "amountMinor": 240000,
+      "categoryId": "utilities",
+      "transactionDate": "2026-06-15",
+      "title": "Electricity and broadband",
+      "notes": "Sample transaction for 2026-06",
+      "paymentMethod": "UPI",
+      "tags": [
+        "home",
+        "bills",
+        "sample"
+      ],
+      "createdAt": "2026-06-15T15:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-06-07",
+      "amountMinor": 207900,
+      "categoryId": "groceries",
+      "transactionDate": "2026-06-18",
+      "title": "Fresh produce",
+      "notes": "Sample transaction for 2026-06",
+      "paymentMethod": "UPI",
+      "tags": [
+        "essentials",
+        "sample"
+      ],
+      "createdAt": "2026-06-18T16:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-06-08",
+      "amountMinor": 300250,
+      "categoryId": "shopping",
+      "transactionDate": "2026-06-21",
+      "title": "Household shopping",
+      "notes": "Sample transaction for 2026-06",
+      "paymentMethod": "Debit card",
+      "tags": [
+        "home",
+        "sample"
+      ],
+      "createdAt": "2026-06-21T17:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-06-09",
+      "amountMinor": 131600,
+      "categoryId": "entertainment",
+      "transactionDate": "2026-06-24",
+      "title": "Movie and snacks",
+      "notes": "Sample transaction for 2026-06",
+      "paymentMethod": "UPI",
+      "tags": [
+        "leisure",
+        "sample"
+      ],
+      "createdAt": "2026-06-24T10:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-06-10",
+      "amountMinor": 137100,
+      "categoryId": "dining",
+      "transactionDate": "2026-06-27",
+      "title": "Cafe visits",
+      "notes": "Sample transaction for 2026-06",
+      "paymentMethod": "UPI",
+      "tags": [
+        "leisure",
+        "sample"
+      ],
+      "createdAt": "2026-06-27T11:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-07-01",
+      "amountMinor": 1864800,
+      "categoryId": "rent",
+      "transactionDate": "2026-07-01",
+      "title": "Apartment rent",
+      "notes": "Sample transaction for 2026-07",
+      "paymentMethod": "Bank transfer",
+      "tags": [
+        "home",
+        "fixed",
+        "sample"
+      ],
+      "createdAt": "2026-07-01T10:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-07-02",
+      "amountMinor": 254550,
+      "categoryId": "groceries",
+      "transactionDate": "2026-07-03",
+      "title": "Monthly groceries",
+      "notes": "Sample data for import, statistics, CSV and PDF export testing",
+      "paymentMethod": "UPI",
+      "tags": [
+        "home",
+        "essentials",
+        "sample"
+      ],
+      "createdAt": "2026-07-03T11:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-07-03",
+      "amountMinor": 117200,
+      "categoryId": "subscriptions",
+      "transactionDate": "2026-07-06",
+      "title": "Streaming and cloud",
+      "notes": "Sample transaction for 2026-07",
+      "paymentMethod": "Credit card",
+      "tags": [
+        "recurring",
+        "sample"
+      ],
+      "createdAt": "2026-07-06T12:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-07-04",
+      "amountMinor": 138800,
+      "categoryId": "transport",
+      "transactionDate": "2026-07-09",
+      "title": "Metro and cab rides",
+      "notes": "Sample transaction for 2026-07",
+      "paymentMethod": "UPI",
+      "tags": [
+        "commute",
+        "sample"
+      ],
+      "createdAt": "2026-07-09T13:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-07-05",
+      "amountMinor": 158550,
+      "categoryId": "dining",
+      "transactionDate": "2026-07-12",
+      "title": "Weekend dinner",
+      "notes": "Sample transaction for 2026-07",
+      "paymentMethod": "Credit card",
+      "tags": [
+        "family",
+        "sample"
+      ],
+      "createdAt": "2026-07-12T14:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-07-06",
+      "amountMinor": 243700,
+      "categoryId": "utilities",
+      "transactionDate": "2026-07-15",
+      "title": "Electricity and broadband",
+      "notes": "Sample transaction for 2026-07",
+      "paymentMethod": "UPI",
+      "tags": [
+        "home",
+        "bills",
+        "sample"
+      ],
+      "createdAt": "2026-07-15T15:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-07-07",
+      "amountMinor": 211600,
+      "categoryId": "groceries",
+      "transactionDate": "2026-07-18",
+      "title": "Fresh produce",
+      "notes": "Sample transaction for 2026-07",
+      "paymentMethod": "UPI",
+      "tags": [
+        "essentials",
+        "sample"
+      ],
+      "createdAt": "2026-07-18T16:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-07-08",
+      "amountMinor": 303950,
+      "categoryId": "shopping",
+      "transactionDate": "2026-07-21",
+      "title": "Household shopping",
+      "notes": "Sample transaction for 2026-07",
+      "paymentMethod": "Debit card",
+      "tags": [
+        "home",
+        "sample"
+      ],
+      "createdAt": "2026-07-21T17:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-07-09",
+      "amountMinor": 135300,
+      "categoryId": "entertainment",
+      "transactionDate": "2026-07-24",
+      "title": "Movie and snacks",
+      "notes": "Sample transaction for 2026-07",
+      "paymentMethod": "UPI",
+      "tags": [
+        "leisure",
+        "sample"
+      ],
+      "createdAt": "2026-07-24T10:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-expense-2026-07-10",
+      "amountMinor": 140800,
+      "categoryId": "dining",
+      "transactionDate": "2026-07-27",
+      "title": "Cafe visits",
+      "notes": "Sample transaction for 2026-07",
+      "paymentMethod": "UPI",
+      "tags": [
+        "leisure",
+        "sample"
+      ],
+      "createdAt": "2026-07-27T11:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "groceries",
+      "name": "Groceries",
+      "lucideIconName": "shopping-basket",
+      "colour": "#2f9e6f",
+      "description": "Sample groceries category",
+      "monthlyLimitMinor": 700000,
+      "warningThresholdPercentage": 80,
+      "active": true,
+      "archived": false,
+      "sortOrder": 0,
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "dining",
+      "name": "Dining",
+      "lucideIconName": "utensils",
+      "colour": "#e9a23b",
+      "description": "Sample dining category",
+      "monthlyLimitMinor": 250000,
+      "warningThresholdPercentage": 80,
+      "active": true,
+      "archived": false,
+      "sortOrder": 1,
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "transport",
+      "name": "Transport",
+      "lucideIconName": "bus-front",
+      "colour": "#4f86e8",
+      "description": "Sample transport category",
+      "monthlyLimitMinor": 350000,
+      "warningThresholdPercentage": 80,
+      "active": true,
+      "archived": false,
+      "sortOrder": 2,
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "utilities",
+      "name": "Utilities",
+      "lucideIconName": "plug-zap",
+      "colour": "#4aa6a6",
+      "description": "Sample utilities category",
+      "monthlyLimitMinor": 350000,
+      "warningThresholdPercentage": 80,
+      "active": true,
+      "archived": false,
+      "sortOrder": 3,
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "rent",
+      "name": "Rent",
+      "lucideIconName": "house",
+      "colour": "#7d6be8",
+      "description": "Sample rent category",
+      "monthlyLimitMinor": 1850000,
+      "warningThresholdPercentage": 80,
+      "active": true,
+      "archived": false,
+      "sortOrder": 4,
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "healthcare",
+      "name": "Healthcare",
+      "lucideIconName": "heart-pulse",
+      "colour": "#e45c76",
+      "description": "Sample healthcare category",
+      "monthlyLimitMinor": 300000,
+      "warningThresholdPercentage": 80,
+      "active": true,
+      "archived": false,
+      "sortOrder": 5,
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "entertainment",
+      "name": "Entertainment",
+      "lucideIconName": "clapperboard",
+      "colour": "#d6639c",
+      "description": "Sample entertainment category",
+      "monthlyLimitMinor": 200000,
+      "warningThresholdPercentage": 80,
+      "active": true,
+      "archived": false,
+      "sortOrder": 6,
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "subscriptions",
+      "name": "Subscriptions",
+      "lucideIconName": "repeat-2",
+      "colour": "#7e8b98",
+      "description": "Sample subscriptions category",
+      "monthlyLimitMinor": 150000,
+      "warningThresholdPercentage": 80,
+      "active": true,
+      "archived": false,
+      "sortOrder": 7,
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "shopping",
+      "name": "Shopping",
+      "lucideIconName": "shopping-bag",
+      "colour": "#b16ad3",
+      "description": "Sample shopping category",
+      "monthlyLimitMinor": 400000,
+      "warningThresholdPercentage": 80,
+      "active": true,
+      "archived": false,
+      "sortOrder": 8,
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "other",
+      "name": "Other",
+      "lucideIconName": "shapes",
+      "colour": "#78847e",
+      "description": "Sample other category",
+      "monthlyLimitMinor": 150000,
+      "warningThresholdPercentage": 80,
+      "active": true,
+      "archived": false,
+      "sortOrder": 9,
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    }
+  ],
+  "incomes": [
+    {
+      "id": "sample-income-2026-03-salary",
+      "cycleId": "cycle-2026-03-01",
+      "sourceName": "Salary",
+      "amountMinor": 7200000,
+      "incomeDate": "2026-03-01",
+      "notes": "Monthly salary sample entry",
+      "recurring": true,
+      "active": true,
+      "createdAt": "2026-03-01T09:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-income-2026-03-freelance",
+      "cycleId": "cycle-2026-03-01",
+      "sourceName": "Freelance project",
+      "amountMinor": 550000,
+      "incomeDate": "2026-03-19",
+      "notes": "Variable side income for chart testing",
+      "recurring": false,
+      "active": true,
+      "createdAt": "2026-03-19T18:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-income-2026-04-salary",
+      "cycleId": "cycle-2026-04-01",
+      "sourceName": "Salary",
+      "amountMinor": 7200000,
+      "incomeDate": "2026-04-01",
+      "notes": "Monthly salary sample entry",
+      "recurring": true,
+      "active": true,
+      "createdAt": "2026-04-01T09:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-income-2026-05-salary",
+      "cycleId": "cycle-2026-05-01",
+      "sourceName": "Salary",
+      "amountMinor": 7400000,
+      "incomeDate": "2026-05-01",
+      "notes": "Monthly salary sample entry",
+      "recurring": true,
+      "active": true,
+      "createdAt": "2026-05-01T09:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-income-2026-05-freelance",
+      "cycleId": "cycle-2026-05-01",
+      "sourceName": "Freelance project",
+      "amountMinor": 800000,
+      "incomeDate": "2026-05-21",
+      "notes": "Variable side income for chart testing",
+      "recurring": false,
+      "active": true,
+      "createdAt": "2026-05-21T18:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-income-2026-06-salary",
+      "cycleId": "cycle-2026-06-01",
+      "sourceName": "Salary",
+      "amountMinor": 7400000,
+      "incomeDate": "2026-06-01",
+      "notes": "Monthly salary sample entry",
+      "recurring": true,
+      "active": true,
+      "createdAt": "2026-06-01T09:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-income-2026-06-freelance",
+      "cycleId": "cycle-2026-06-01",
+      "sourceName": "Freelance project",
+      "amountMinor": 350000,
+      "incomeDate": "2026-06-19",
+      "notes": "Variable side income for chart testing",
+      "recurring": false,
+      "active": true,
+      "createdAt": "2026-06-19T18:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-income-2026-07-salary",
+      "cycleId": "cycle-2026-07-01",
+      "sourceName": "Salary",
+      "amountMinor": 7600000,
+      "incomeDate": "2026-07-01",
+      "notes": "Monthly salary sample entry",
+      "recurring": true,
+      "active": true,
+      "createdAt": "2026-07-01T09:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "sample-income-2026-07-freelance",
+      "cycleId": "cycle-2026-07-01",
+      "sourceName": "Freelance project",
+      "amountMinor": 650000,
+      "incomeDate": "2026-07-20",
+      "notes": "Variable side income for chart testing",
+      "recurring": false,
+      "active": true,
+      "createdAt": "2026-07-20T18:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    }
+  ],
+  "budgetCycles": [
+    {
+      "id": "cycle-2026-03-01",
+      "startDate": "2026-03-01",
+      "endDate": "2026-03-31",
+      "startDay": 1,
+      "totalBudgetMinor": 5400000,
+      "savingsTargetMinor": 1500000,
+      "emergencyAllocationMinor": 500000,
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "cycle-2026-04-01",
+      "startDate": "2026-04-01",
+      "endDate": "2026-04-30",
+      "startDay": 1,
+      "totalBudgetMinor": 5200000,
+      "savingsTargetMinor": 1550000,
+      "emergencyAllocationMinor": 500000,
+      "createdAt": "2026-04-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "cycle-2026-05-01",
+      "startDate": "2026-05-01",
+      "endDate": "2026-05-31",
+      "startDay": 1,
+      "totalBudgetMinor": 5500000,
+      "savingsTargetMinor": 1600000,
+      "emergencyAllocationMinor": 500000,
+      "createdAt": "2026-05-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "cycle-2026-06-01",
+      "startDate": "2026-06-01",
+      "endDate": "2026-06-30",
+      "startDay": 1,
+      "totalBudgetMinor": 5500000,
+      "savingsTargetMinor": 1650000,
+      "emergencyAllocationMinor": 500000,
+      "createdAt": "2026-06-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    },
+    {
+      "id": "cycle-2026-07-01",
+      "startDate": "2026-07-01",
+      "endDate": "2026-07-31",
+      "startDay": 1,
+      "totalBudgetMinor": 5800000,
+      "savingsTargetMinor": 1700000,
+      "emergencyAllocationMinor": 500000,
+      "createdAt": "2026-07-01T00:00:00.000Z",
+      "updatedAt": "2026-07-28T10:30:00.000Z"
+    }
+  ],
+  "settings": {
+    "defaultCurrencyCode": "INR",
+    "budgetCycleStartDay": 1,
+    "theme": "system",
+    "pinEnabled": false,
+    "biometricEnabled": false,
+    "autoLockMinutes": 5,
+    "lockInBackground": true,
+    "warningThresholdPercentage": 80,
+    "copyPreviousBudget": true
+  }
+}
