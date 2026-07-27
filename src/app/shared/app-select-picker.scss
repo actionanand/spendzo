@@ -1,0 +1,165 @@
+:host {
+  display: grid;
+  min-width: 0;
+  gap: 0.35rem;
+}
+
+.field-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.picker-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 3rem;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.62rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.8rem;
+  color: var(--text);
+  background: var(--surface);
+  text-align: left;
+}
+
+.picker-trigger .selected-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-trigger > svg {
+  color: var(--muted);
+}
+
+:host > small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.option-icon {
+  --option-colour: var(--accent);
+  display: grid;
+  width: 2.15rem;
+  height: 2.15rem;
+  flex: 0 0 2.15rem;
+  border-radius: 0.62rem;
+  place-items: center;
+  color: var(--option-colour);
+  background: color-mix(in srgb, var(--option-colour) 13%, var(--surface));
+}
+
+.option-icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.picker-trigger .option-icon {
+  width: 1.8rem;
+  height: 1.8rem;
+  flex-basis: 1.8rem;
+}
+
+.picker-backdrop {
+  position: fixed;
+  z-index: 110;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  background: rgb(2 14 9 / 65%);
+  backdrop-filter: blur(4px);
+}
+
+.picker-sheet {
+  width: 100%;
+  max-height: 76dvh;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem 1.25rem 0 0;
+  color: var(--text);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lg);
+}
+
+.picker-sheet header {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.15rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+
+.picker-sheet header button {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  place-items: center;
+  color: var(--muted);
+  background: var(--surface-muted);
+}
+
+.picker-option {
+  display: flex;
+  width: 100%;
+  min-height: 3.8rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.15rem;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+}
+
+.picker-option.selected {
+  background: var(--accent-faint);
+}
+
+.option-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 0.15rem;
+}
+
+.option-copy strong,
+.option-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.option-copy small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.option-check {
+  color: var(--accent-strong);
+}
+
+@media (min-width: 640px) {
+  .picker-backdrop {
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .picker-sheet {
+    width: min(32rem, 100%);
+    max-height: min(42rem, calc(100dvh - 3rem));
+    border-radius: 1.25rem;
+  }
+}
