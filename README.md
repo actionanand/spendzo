@@ -12,6 +12,10 @@ npm run develop
 
 Once the server is running, open your browser and navigate to `http://localhost:3030/`. The application will automatically reload whenever you modify any of the source files.
 
+## Live URL
+
+https://actionanand.github.io/spendzo/
+
 ## Cloning Guide
 
 1.  Clone only the remote primary HEAD (default: origin/main)
