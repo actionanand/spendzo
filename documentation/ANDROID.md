@@ -53,9 +53,12 @@ Run `npm run android:patch` again after every `npx cap sync android`.
 synchronisation, native patching, Java setup, and a release Gradle build.
 
 - Every push to `main-android` automatically increments `versionCode` only.
+- `versionName` is changed only when the user runs a manual patch, minor, or major version command.
+- CI explicitly applies `minSdkVersion` 24 and `targetSdkVersion` 35 to the generated project.
 - Every `main-android` build produces a release APK and AAB, even when signing secrets are absent.
 - With signing secrets, filenames are `releases/spendzo-release-x-y-z.apk` and `.aab`.
 - Without signing secrets, the files receive an `-unsigned` suffix.
+- Build logs and the job summary mark signed files with `✅` and unsigned files with `⚠️`.
 - APK and AAB files in `releases/` are committed back to `main-android` and also uploaded as
   workflow artifacts.
 - Tags matching `v*` attach the same APK and AAB to a GitHub Release.

@@ -14,6 +14,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  MIN_SDK_VERSION: 24
+  TARGET_SDK_VERSION: 35
   RELEASE_BASENAME: spendzo-release
 
 jobs:
@@ -44,7 +46,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Automatically bump Android versionCode
+      - name: Bump versionCode and commit
         if: github.ref == 'refs/heads/main-android'
         shell: bash
         run: |
@@ -53,7 +55,7 @@ jobs:
           node scripts/bump-android-version.js
           VERSION_CODE=$(node -p "require('./android-version.json').versionCode")
           VERSION_NAME=$(node -p "require('./android-version.json').versionName")
-          echo "Building versionName=$VERSION_NAME versionCode=$VERSION_CODE"
+          echo "🔢 Building versionName=$VERSION_NAME versionCode=$VERSION_CODE"
           git pull --rebase --autostash
           git add android-version.json
           if git diff --cached --quiet; then
@@ -87,7 +89,24 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
-          node scripts/patch-android.mjs
+
+      - name: Apply SDK and release versions
+        working-directory: android/app
+        shell: bash
+        run: |
+          sed -i 's/versionCode [0-9]*/versionCode project.hasProperty("versionCode") ? project.versionCode.toInteger() : 1/' build.gradle
+          sed -i 's/versionName "[^"]*"/versionName project.hasProperty("versionName") ? project.versionName : "1.0.0"/' build.gradle
+          sed -i "s/minSdkVersion = .*/minSdkVersion = $MIN_SDK_VERSION/" ../variables.gradle
+          sed -i "s/targetSdkVersion = .*/targetSdkVersion = $TARGET_SDK_VERSION/" ../variables.gradle
+          grep -Fq 'project.hasProperty("versionCode")' build.gradle
+          grep -Fq 'project.hasProperty("versionName")' build.gradle
+          grep -Fq "minSdkVersion = $MIN_SDK_VERSION" ../variables.gradle
+          grep -Fq "targetSdkVersion = $TARGET_SDK_VERSION" ../variables.gradle
+          echo "✅ Applied versionName=$VERSION_NAME versionCode=$VERSION_CODE"
+          echo "✅ Applied minSdkVersion=$MIN_SDK_VERSION targetSdkVersion=$TARGET_SDK_VERSION"
+
+      - name: Patch Android native shell
+        run: node scripts/patch-android.mjs
 
       - name: Make Gradle executable
         run: chmod +x android/gradlew
@@ -110,15 +129,15 @@ jobs:
           if [[ -n "$KEYSTORE_BASE64" && -n "$KEYSTORE_PASSWORD" && -n "$KEY_ALIAS" && -n "$KEY_PASSWORD" ]]; then
             if printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/spendzo-release.jks"; then
               echo "available=true" >> "$GITHUB_OUTPUT"
-              echo "Signing credentials found. Signed APK and AAB files will be built."
+              echo "🔐 Signing credentials found. Signed APK and AAB files will be built."
             else
               rm -f "$RUNNER_TEMP/spendzo-release.jks"
               echo "available=false" >> "$GITHUB_OUTPUT"
-              echo "Keystore decoding failed. Unsigned release files will be built."
+              echo "⚠️ Keystore decoding failed. Unsigned release files will be built."
             fi
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "Signing secrets are incomplete. Unsigned release files will be built."
+            echo "⚠️ Signing secrets are incomplete. Unsigned release files will be built."
           fi
 
       - name: Verify signing keystore
@@ -137,7 +156,13 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.KEY_PASSWORD }}
         run: |
-          GRADLE_ARGS=(assembleRelease bundleRelease --no-daemon)
+          GRADLE_ARGS=(
+            assembleRelease
+            bundleRelease
+            --no-daemon
+            "-PversionCode=$VERSION_CODE"
+            "-PversionName=$VERSION_NAME"
+          )
           if [[ "$HAS_KEYSTORE" == "true" ]]; then
             GRADLE_ARGS+=(
               "-Pandroid.injected.signing.store.file=$KEYSTORE_PATH"
@@ -160,26 +185,35 @@ jobs:
           if [[ "$HAS_KEYSTORE" == "true" ]]; then
             APK_TARGET="releases/${RELEASE_FILE_BASENAME}.apk"
             AAB_TARGET="releases/${RELEASE_FILE_BASENAME}.aab"
+            APK_STATUS="✅ SIGNED APK created: $APK_TARGET"
+            AAB_STATUS="✅ SIGNED AAB created: $AAB_TARGET"
           else
             APK_TARGET="releases/${RELEASE_FILE_BASENAME}-unsigned.apk"
             AAB_TARGET="releases/${RELEASE_FILE_BASENAME}-unsigned.aab"
+            APK_STATUS="⚠️ UNSIGNED APK created: $APK_TARGET"
+            AAB_STATUS="⚠️ UNSIGNED AAB created: $AAB_TARGET"
           fi
           cp "$APK_SOURCE" "$APK_TARGET"
           cp "$AAB_SOURCE" "$AAB_TARGET"
           echo "APK_TARGET=$APK_TARGET" >> "$GITHUB_ENV"
           echo "AAB_TARGET=$AAB_TARGET" >> "$GITHUB_ENV"
-          echo "Created $APK_TARGET"
-          echo "Created $AAB_TARGET"
+          echo "APK_STATUS=$APK_STATUS" >> "$GITHUB_ENV"
+          echo "AAB_STATUS=$AAB_STATUS" >> "$GITHUB_ENV"
+          echo "$APK_STATUS"
+          echo "$AAB_STATUS"
 
       - name: Summarize Android artifacts
         shell: bash
         run: |
           test -s "$APK_TARGET"
           test -s "$AAB_TARGET"
+          echo "📦 Android artifact summary"
+          echo "$APK_STATUS"
+          echo "$AAB_STATUS"
           {
-            echo "## Android release $VERSION_NAME ($VERSION_CODE)"
-            echo "- APK: \`$APK_TARGET\`"
-            echo "- AAB: \`$AAB_TARGET\`"
+            echo "## 📦 Android release $VERSION_NAME ($VERSION_CODE)"
+            echo "- $APK_STATUS"
+            echo "- $AAB_STATUS"
           } >> "$GITHUB_STEP_SUMMARY"
           ls -lh releases/
 
