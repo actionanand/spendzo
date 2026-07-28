@@ -950,6 +950,7 @@
       </button>
       <button
         class="side-nav-toggle"
+        [class.discovery-hint]="sideNavHintActive()"
         type="button"
         [attr.aria-label]="sideNavCollapsed() ? 'Expand navigation' : 'Collapse navigation'"
         [attr.aria-expanded]="!sideNavCollapsed()"
@@ -962,6 +963,12 @@
         ></svg>
         <span>{{ sideNavCollapsed() ? 'Expand' : 'Collapse' }}</span>
       </button>
+      @if (sideNavHintActive()) {
+        <span class="side-nav-click-coach" aria-hidden="true">
+          <strong>Click me</strong>
+          <span>👆</span>
+        </span>
+      }
     </nav>
 
     @if (dialog()) {

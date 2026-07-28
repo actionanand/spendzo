@@ -18,6 +18,7 @@ import { ReportChart } from './shared/report-chart';
 
 type Page = 'home' | 'transactions' | 'statistics' | 'budgets' | 'settings';
 type Dialog = 'expense' | 'income' | 'budget' | 'category' | 'pin' | 'import' | 'export' | null;
+const SIDE_NAV_HINT_SESSION_KEY = 'spendzo-side-nav-hint-v3-clicked';
 
 interface ConfirmationRequest {
   readonly title: string;
@@ -67,6 +68,7 @@ export class App {
   protected readonly categoryFilter = signal('');
   protected readonly statisticsPeriod = signal('Current');
   protected readonly sideNavCollapsed = signal(this.readSideNavCollapsed());
+  protected readonly sideNavHintActive = signal(this.readSideNavHintActive());
   protected readonly editingExpenseId = signal<string | null>(null);
   protected readonly confirmation = signal<ConfirmationRequest | null>(null);
   protected readonly exportFormat = signal<ExpenseExportFormat>('PDF');
@@ -435,11 +437,13 @@ export class App {
   protected toggleSideNav(): void {
     const collapsed = !this.sideNavCollapsed();
     this.sideNavCollapsed.set(collapsed);
+    this.sideNavHintActive.set(false);
     try {
       localStorage.setItem('spendzo-side-nav-collapsed', String(collapsed));
     } catch {
       // The navigation still works when browser storage is unavailable.
     }
+    this.markSideNavHintSeen();
   }
 
   protected changeTransactionQuery(event: Event): void {
@@ -1047,6 +1051,22 @@ export class App {
       return localStorage.getItem('spendzo-side-nav-collapsed') === 'true';
     } catch {
       return false;
+    }
+  }
+
+  private readSideNavHintActive(): boolean {
+    try {
+      return sessionStorage.getItem(SIDE_NAV_HINT_SESSION_KEY) !== 'true';
+    } catch {
+      return true;
+    }
+  }
+
+  private markSideNavHintSeen(): void {
+    try {
+      sessionStorage.setItem(SIDE_NAV_HINT_SESSION_KEY, 'true');
+    } catch {
+      // The hint still works for the current page when session storage is unavailable.
     }
   }
 
