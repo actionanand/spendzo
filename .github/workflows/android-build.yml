@@ -139,7 +139,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.KEY_PASSWORD }}
         run: |
-          if [[ -n "$KEYSTORE_BASE64" && -n "$KEYSTORE_PASSWORD" && -n "$KEY_ALIAS" && -n "$KEY_PASSWORD" ]]; then
+          if [[ -n "$KEYSTORE_BASE64" && -n "$KEYSTORE_PASSWORD" && -n "$KEY_ALIAS" ]]; then
             if printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/spendzo-release.jks"; then
               echo "available=true" >> "$GITHUB_OUTPUT"
               echo "🔐 Signing credentials found. Signed APK and AAB files will be built."
@@ -150,52 +150,81 @@ jobs:
             fi
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Signing secrets are incomplete. Unsigned release files will be built."
+            echo "⚠️ Keystore, store password, or alias is missing. Unsigned release files will be built."
           fi
 
-      - name: Verify signing keystore
+      - name: Detect keystore type
+        id: keystore_type
         if: steps.keystore.outputs.available == 'true'
+        continue-on-error: true
+        shell: bash
         env:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
-        run: node scripts/detect-keystore-format.mjs "$RUNNER_TEMP/spendzo-release.jks"
+        run: |
+          DETECTION=$(node scripts/detect-keystore-format.mjs "$RUNNER_TEMP/spendzo-release.jks")
+          echo "$DETECTION"
+          KEYSTORE_TYPE=$(printf '%s\n' "$DETECTION" | awk -F': ' '/Keystore type:/ { print toupper($2); exit }')
+          test -n "$KEYSTORE_TYPE"
+          test "$KEYSTORE_TYPE" != "UNKNOWN"
+          echo "type=$KEYSTORE_TYPE" >> "$GITHUB_OUTPUT"
+          echo "🔎 Detected keystore type: $KEYSTORE_TYPE"
 
       - name: Build release APK and AAB
         working-directory: android
         shell: bash
         env:
-          HAS_KEYSTORE: ${{ steps.keystore.outputs.available }}
+          CAN_SIGN: ${{ steps.keystore.outputs.available == 'true' && steps.keystore_type.outcome == 'success' }}
+          KEYSTORE_TYPE: ${{ steps.keystore_type.outputs.type }}
           KEYSTORE_PATH: ${{ runner.temp }}/spendzo-release.jks
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.KEY_PASSWORD }}
         run: |
-          GRADLE_ARGS=(
+          BASE_GRADLE_ARGS=(
             assembleRelease
             bundleRelease
             --no-daemon
             "-PversionCode=$VERSION_CODE"
             "-PversionName=$VERSION_NAME"
           )
-          if [[ "$HAS_KEYSTORE" == "true" ]]; then
-            GRADLE_ARGS+=(
+
+          SIGNED_BUILD=false
+          if [[ "$CAN_SIGN" == "true" ]]; then
+            EFFECTIVE_KEY_PASSWORD="$KEY_PASSWORD"
+            if [[ "$KEYSTORE_TYPE" == "PKCS12" ]]; then
+              EFFECTIVE_KEY_PASSWORD="$KEYSTORE_PASSWORD"
+              echo "🔐 PKCS12 detected; using the keystore password for private-key decryption."
+            fi
+
+            SIGNING_ARGS=(
               "-Pandroid.injected.signing.store.file=$KEYSTORE_PATH"
               "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD"
               "-Pandroid.injected.signing.key.alias=$KEY_ALIAS"
-              "-Pandroid.injected.signing.key.password=$KEY_PASSWORD"
+              "-Pandroid.injected.signing.key.password=$EFFECTIVE_KEY_PASSWORD"
             )
+
+            if ./gradlew "${BASE_GRADLE_ARGS[@]}" "${SIGNING_ARGS[@]}"; then
+              SIGNED_BUILD=true
+            else
+              echo "⚠️ Signing failed. Rebuilding unsigned APK and AAB artifacts."
+              ./gradlew clean --no-daemon
+              ./gradlew "${BASE_GRADLE_ARGS[@]}"
+            fi
+          else
+            echo "⚠️ A readable signing keystore is unavailable. Building unsigned artifacts."
+            ./gradlew "${BASE_GRADLE_ARGS[@]}"
           fi
-          ./gradlew "${GRADLE_ARGS[@]}"
+
+          echo "SIGNED_BUILD=$SIGNED_BUILD" >> "$GITHUB_ENV"
 
       - name: Copy APK and AAB to releases
         shell: bash
-        env:
-          HAS_KEYSTORE: ${{ steps.keystore.outputs.available }}
         run: |
           APK_SOURCE=$(find android/app/build/outputs/apk/release -type f -name '*.apk' | head -1)
           AAB_SOURCE=$(find android/app/build/outputs/bundle/release -type f -name '*.aab' | head -1)
           test -s "$APK_SOURCE"
           test -s "$AAB_SOURCE"
-          if [[ "$HAS_KEYSTORE" == "true" ]]; then
+          if [[ "$SIGNED_BUILD" == "true" ]]; then
             APK_TARGET="releases/${RELEASE_FILE_BASENAME}.apk"
             AAB_TARGET="releases/${RELEASE_FILE_BASENAME}.aab"
             APK_STATUS="✅ SIGNED APK created: $APK_TARGET"
