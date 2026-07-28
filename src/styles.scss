@@ -1573,8 +1573,16 @@ svg[lucideIcon] {
 
 .amount-input input {
   border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0;
+  box-shadow: none;
   font-size: 1.35rem;
   font-weight: 750;
+}
+
+.amount-input:focus-within {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-strong) 18%, transparent);
 }
 
 .form-grid {

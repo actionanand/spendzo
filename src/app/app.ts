@@ -45,6 +45,7 @@ interface ConfirmationRequest {
     '(window:biometric-success)': 'handleBiometricSuccess()',
     '(window:biometric-enabled)': 'handleBiometricEnabled()',
     '(window:native-export-ready)': 'handleNativeExportReady()',
+    '(window:native-export-cancelled)': 'handleNativeExportCancelled()',
     '(window:native-export-error)': 'handleNativeExportError()',
     '(window:spendzo-back)': 'handleAndroidBack()',
   },
@@ -64,7 +65,7 @@ export class App {
   protected readonly formError = signal('');
   protected readonly transactionQuery = signal('');
   protected readonly categoryFilter = signal('');
-  protected readonly statisticsPeriod = signal('Current cycle');
+  protected readonly statisticsPeriod = signal('Current');
   protected readonly editingExpenseId = signal<string | null>(null);
   protected readonly confirmation = signal<ConfirmationRequest | null>(null);
   protected readonly exportFormat = signal<ExpenseExportFormat>('PDF');
@@ -704,7 +705,11 @@ export class App {
   }
 
   protected handleNativeExportReady(): void {
-    this.snackbar.show('Export is ready. Choose an app to save or share it.');
+    this.snackbar.show('File saved to the selected location.');
+  }
+
+  protected handleNativeExportCancelled(): void {
+    this.snackbar.show('Save cancelled.', 'INFO');
   }
 
   protected handleNativeExportError(): void {
@@ -739,8 +744,10 @@ export class App {
   }
 
   protected exportBackup(): void {
-    this.portability.exportBackup(this.store.snapshot());
-    this.showMessage('Backup exported without PIN or biometric secrets.');
+    const delivery = this.portability.exportBackup(this.store.snapshot());
+    if (delivery === 'browser') {
+      this.showMessage('Backup exported without PIN or biometric secrets.');
+    }
   }
 
   protected openExpenseExport(format: ExpenseExportFormat): void {
@@ -992,8 +999,8 @@ export class App {
 
   private statisticsRange(): { readonly startDate: string; readonly endDate: string } | null {
     const period = this.statisticsPeriod();
-    if (period === 'All time') return null;
-    if (period === 'Current cycle') {
+    if (period === 'All') return null;
+    if (period === 'Current') {
       return {
         startDate: this.store.activeCycle().startDate,
         endDate: this.store.activeCycle().endDate,

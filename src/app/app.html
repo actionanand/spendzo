@@ -425,10 +425,7 @@
           </section>
 
           <div class="period-tabs" role="group" aria-label="Statistics period">
-            @for (
-              period of ['Current cycle', '3 months', '6 months', '1 year', 'All time'];
-              track period
-            ) {
+            @for (period of ['Current', '3 months', '6 months', '1 year', 'All']; track period) {
               <button
                 type="button"
                 [class.active]="statisticsPeriod() === period"
