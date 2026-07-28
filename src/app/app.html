@@ -922,7 +922,12 @@
       <svg lucideIcon="plus" aria-hidden="true"></svg>
     </button>
 
-    <nav class="bottom-nav" aria-label="Primary navigation">
+    <nav
+      id="primary-navigation"
+      class="bottom-nav"
+      [class.collapsed]="desktopSideNav() && sideNavCollapsed()"
+      aria-label="Primary navigation"
+    >
       <button type="button" [class.active]="page() === 'home'" (click)="navigate('home')">
         <svg lucideIcon="house" aria-hidden="true"></svg><span>Home</span>
       </button>
@@ -946,6 +951,31 @@
       <button type="button" [class.active]="page() === 'settings'" (click)="navigate('settings')">
         <svg lucideIcon="settings-2" aria-hidden="true"></svg><span>Settings</span>
       </button>
+      @if (desktopSideNav()) {
+        <button
+          class="side-nav-toggle"
+          [class.discovery-hint]="sideNavHintActive()"
+          type="button"
+          [attr.aria-label]="
+            sideNavCollapsed() ? 'Expand side navigation' : 'Collapse side navigation'
+          "
+          [attr.aria-expanded]="!sideNavCollapsed()"
+          aria-controls="primary-navigation"
+          (click)="toggleSideNav()"
+        >
+          <svg
+            [lucideIcon]="sideNavCollapsed() ? 'panel-left-open' : 'panel-left-close'"
+            aria-hidden="true"
+          ></svg>
+          <span>{{ sideNavCollapsed() ? 'Expand' : 'Collapse' }}</span>
+        </button>
+        @if (sideNavHintActive()) {
+          <span class="side-nav-click-coach" aria-hidden="true">
+            <strong>Click me</strong>
+            <span>👆</span>
+          </span>
+        }
+      }
     </nav>
 
     @if (dialog()) {

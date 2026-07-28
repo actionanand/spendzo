@@ -18,6 +18,12 @@ import { ReportChart } from './shared/report-chart';
 
 type Page = 'home' | 'transactions' | 'statistics' | 'budgets' | 'settings';
 type Dialog = 'expense' | 'income' | 'budget' | 'category' | 'pin' | 'import' | 'export' | null;
+const SIDE_NAV_COLLAPSED_KEY = 'spendzo-side-nav-collapsed';
+const SIDE_NAV_HINT_SESSION_KEY = 'spendzo-side-nav-hint-v5-clicked';
+
+interface SpendzoNativeWindow extends Window {
+  SpendzoNative?: object;
+}
 
 interface ConfirmationRequest {
   readonly title: string;
@@ -47,6 +53,7 @@ interface ConfirmationRequest {
     '(window:native-export-ready)': 'handleNativeExportReady()',
     '(window:native-export-error)': 'handleNativeExportError()',
     '(window:spendzo-back)': 'handleAndroidBack()',
+    '(window:resize)': 'updateDesktopSideNav()',
   },
 })
 export class App {
@@ -65,6 +72,9 @@ export class App {
   protected readonly transactionQuery = signal('');
   protected readonly categoryFilter = signal('');
   protected readonly statisticsPeriod = signal('Current cycle');
+  protected readonly desktopSideNav = signal(this.isDesktopSideNavMode());
+  protected readonly sideNavCollapsed = signal(this.readSideNavCollapsed());
+  protected readonly sideNavHintActive = signal(this.readSideNavHintActive());
   protected readonly editingExpenseId = signal<string | null>(null);
   protected readonly confirmation = signal<ConfirmationRequest | null>(null);
   protected readonly exportFormat = signal<ExpenseExportFormat>('PDF');
@@ -428,6 +438,26 @@ export class App {
       document.querySelector('main')?.focus();
     };
     if (this.canDeactivate(performNavigation)) performNavigation();
+  }
+
+  protected updateDesktopSideNav(): void {
+    this.desktopSideNav.set(this.isDesktopSideNavMode());
+  }
+
+  protected toggleSideNav(): void {
+    const collapsed = !this.sideNavCollapsed();
+    this.sideNavCollapsed.set(collapsed);
+    this.sideNavHintActive.set(false);
+    try {
+      localStorage.setItem(SIDE_NAV_COLLAPSED_KEY, String(collapsed));
+    } catch {
+      // The navigation still works when browser storage is unavailable.
+    }
+    try {
+      sessionStorage.setItem(SIDE_NAV_HINT_SESSION_KEY, 'true');
+    } catch {
+      // The coach still stops for the current page when session storage is unavailable.
+    }
   }
 
   protected changeTransactionQuery(event: Event): void {
@@ -1022,6 +1052,29 @@ export class App {
     if (day % 10 === 2) return 'nd';
     if (day % 10 === 3) return 'rd';
     return 'th';
+  }
+
+  private isDesktopSideNavMode(): boolean {
+    const isNativeAndroid = Boolean((window as SpendzoNativeWindow).SpendzoNative);
+    const wideViewport =
+      window.matchMedia?.('(min-width: 900px)').matches ?? window.innerWidth >= 900;
+    return wideViewport && !isNativeAndroid;
+  }
+
+  private readSideNavCollapsed(): boolean {
+    try {
+      return localStorage.getItem(SIDE_NAV_COLLAPSED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  private readSideNavHintActive(): boolean {
+    try {
+      return sessionStorage.getItem(SIDE_NAV_HINT_SESSION_KEY) !== 'true';
+    } catch {
+      return true;
+    }
   }
 
   private mergeRecords<T extends { readonly id: string }>(
