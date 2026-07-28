@@ -52,6 +52,9 @@ Run `npm run android:patch` again after every `npx cap sync android`.
 `.github/workflows/android-build.yml` runs lint, the Angular production build, Capacitor
 synchronisation, native patching, Java setup, and a release Gradle build.
 
+- Node.js is read from the root `.nvmrc` file so local WSL2 and CI use the same version.
+- GitHub Actions use Node 24-based action releases; no insecure Node 20 override is enabled.
+- Java/Gradle caching is initialized only after Capacitor creates the generated `android/` project.
 - Every push to `main-android` automatically increments `versionCode` only.
 - `versionName` is changed only when the user runs a manual patch, minor, or major version command.
 - CI explicitly applies `minSdkVersion` 24 and `targetSdkVersion` 35 to the generated project.
