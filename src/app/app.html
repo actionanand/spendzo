@@ -364,43 +364,91 @@
 
           <section class="panel transaction-history" aria-label="Filtered expenses">
             @if (filteredExpenses().length) {
-              @for (expense of filteredExpenses(); track expense.id) {
-                <article class="history-row">
-                  <button class="history-main" type="button" (click)="openExpense(expense)">
-                    <span
-                      class="category-icon"
-                      [style.--category-colour]="categoryById(expense.categoryId)?.colour"
-                    >
-                      <svg [lucideIcon]="categoryIcon(expense)" aria-hidden="true"></svg>
-                    </span>
-                    <span>
-                      <strong>{{ expense.title || categoryById(expense.categoryId)?.name }}</strong>
-                      <small>
-                        {{ expense.transactionDate | date: 'EEE, d MMM y' }}
-                        @if (expense.paymentMethod) {
-                          · {{ expense.paymentMethod }}
-                        }
-                      </small>
-                      @if (expense.notes) {
-                        <span class="notes"
-                          ><svg lucideIcon="notebook-pen" aria-hidden="true"></svg> Note</span
-                        >
-                      }
-                    </span>
-                  </button>
-                  <div class="history-amount">
-                    <strong>−{{ formatMoney(expense.amountMinor, true) }}</strong>
-                    <small>{{ categoryById(expense.categoryId)?.name }}</small>
-                  </div>
+              @for (period of transactionPeriods(); track period.key) {
+                <section class="transaction-period" [class.current]="period.current">
                   <button
-                    class="icon-button danger"
+                    class="transaction-period-toggle"
                     type="button"
-                    [attr.aria-label]="'Delete ' + (expense.title || 'expense')"
-                    (click)="deleteExpense(expense)"
+                    [attr.aria-expanded]="transactionPeriodExpanded(period)"
+                    [attr.aria-controls]="'transaction-period-' + period.key"
+                    (click)="toggleTransactionPeriod(period)"
                   >
-                    <svg lucideIcon="trash-2" aria-hidden="true"></svg>
+                    <span class="transaction-period-title">
+                      <span>
+                        <strong>{{ period.label }}</strong>
+                        @if (period.current) {
+                          <small>Current</small>
+                        }
+                      </span>
+                      <small>
+                        {{ period.expenses.length }}
+                        {{ period.expenses.length === 1 ? 'transaction' : 'transactions' }}
+                      </small>
+                    </span>
+                    <strong>{{ formatMoney(period.totalMinor, true) }}</strong>
+                    <svg
+                      lucideIcon="chevron-down"
+                      [class.expanded]="transactionPeriodExpanded(period)"
+                      aria-hidden="true"
+                    ></svg>
                   </button>
-                </article>
+
+                  @if (transactionPeriodExpanded(period)) {
+                    <div class="transaction-period-rows" [id]="'transaction-period-' + period.key">
+                      @if (period.expenses.length) {
+                        @for (expense of period.expenses; track expense.id) {
+                          <article class="history-row">
+                            <button
+                              class="history-main"
+                              type="button"
+                              (click)="openExpense(expense)"
+                            >
+                              <span
+                                class="category-icon"
+                                [style.--category-colour]="categoryById(expense.categoryId)?.colour"
+                              >
+                                <svg [lucideIcon]="categoryIcon(expense)" aria-hidden="true"></svg>
+                              </span>
+                              <span>
+                                <strong>{{
+                                  expense.title || categoryById(expense.categoryId)?.name
+                                }}</strong>
+                                <small>
+                                  {{ expense.transactionDate | date: 'EEE, d MMM y' }}
+                                  @if (expense.paymentMethod) {
+                                    · {{ expense.paymentMethod }}
+                                  }
+                                </small>
+                                @if (expense.notes) {
+                                  <span class="notes"
+                                    ><svg lucideIcon="notebook-pen" aria-hidden="true"></svg>
+                                    Note</span
+                                  >
+                                }
+                              </span>
+                            </button>
+                            <div class="history-amount">
+                              <strong>−{{ formatMoney(expense.amountMinor, true) }}</strong>
+                              <small>{{ categoryById(expense.categoryId)?.name }}</small>
+                            </div>
+                            <button
+                              class="icon-button danger"
+                              type="button"
+                              [attr.aria-label]="'Delete ' + (expense.title || 'expense')"
+                              (click)="deleteExpense(expense)"
+                            >
+                              <svg lucideIcon="trash-2" aria-hidden="true"></svg>
+                            </button>
+                          </article>
+                        }
+                      } @else {
+                        <p class="transaction-period-empty">
+                          No transactions recorded for this period.
+                        </p>
+                      }
+                    </div>
+                  }
+                </section>
               }
             } @else {
               <div class="empty-state">
@@ -922,7 +970,7 @@
     <nav
       id="primary-navigation"
       class="bottom-nav"
-      [class.collapsed]="sideNavCollapsed()"
+      [class.collapsed]="sideNavAvailable() && sideNavCollapsed()"
       aria-label="Primary navigation"
     >
       <button type="button" [class.active]="page() === 'home'" (click)="navigate('home')">
@@ -948,26 +996,28 @@
       <button type="button" [class.active]="page() === 'settings'" (click)="navigate('settings')">
         <svg lucideIcon="settings-2" aria-hidden="true"></svg><span>Settings</span>
       </button>
-      <button
-        class="side-nav-toggle"
-        [class.discovery-hint]="sideNavHintActive()"
-        type="button"
-        [attr.aria-label]="sideNavCollapsed() ? 'Expand navigation' : 'Collapse navigation'"
-        [attr.aria-expanded]="!sideNavCollapsed()"
-        aria-controls="primary-navigation"
-        (click)="toggleSideNav()"
-      >
-        <svg
-          [lucideIcon]="sideNavCollapsed() ? 'panel-left-open' : 'panel-left-close'"
-          aria-hidden="true"
-        ></svg>
-        <span>{{ sideNavCollapsed() ? 'Expand' : 'Collapse' }}</span>
-      </button>
-      @if (sideNavHintActive()) {
-        <span class="side-nav-click-coach" aria-hidden="true">
-          <strong>Click me</strong>
-          <span>👆</span>
-        </span>
+      @if (sideNavAvailable()) {
+        <button
+          class="side-nav-toggle"
+          [class.discovery-hint]="sideNavHintActive()"
+          type="button"
+          [attr.aria-label]="sideNavCollapsed() ? 'Expand navigation' : 'Collapse navigation'"
+          [attr.aria-expanded]="!sideNavCollapsed()"
+          aria-controls="primary-navigation"
+          (click)="toggleSideNav()"
+        >
+          <svg
+            [lucideIcon]="sideNavCollapsed() ? 'panel-left-open' : 'panel-left-close'"
+            aria-hidden="true"
+          ></svg>
+          <span>{{ sideNavCollapsed() ? 'Expand' : 'Collapse' }}</span>
+        </button>
+        @if (sideNavHintActive()) {
+          <span class="side-nav-click-coach" aria-hidden="true">
+            <strong>Click me</strong>
+            <span>👆</span>
+          </span>
+        }
       }
     </nav>
 

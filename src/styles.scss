@@ -776,7 +776,107 @@ svg[lucideIcon] {
 }
 
 .transaction-history {
-  padding-block: 0.2rem;
+  padding: 0;
+  overflow: hidden;
+}
+
+.transaction-period + .transaction-period {
+  border-top: 1px solid var(--border);
+}
+
+.transaction-period-toggle {
+  display: grid;
+  width: 100%;
+  min-height: 4.5rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 0;
+  border-radius: 0;
+  color: var(--text);
+  background: var(--surface);
+  text-align: left;
+}
+
+.transaction-period.current > .transaction-period-toggle {
+  background: var(--accent-faint);
+}
+
+.transaction-period-toggle:hover {
+  background: var(--surface-muted);
+}
+
+.transaction-period.current > .transaction-period-toggle:hover {
+  background: var(--accent-soft);
+}
+
+.transaction-period-title,
+.transaction-period-title > span {
+  min-width: 0;
+}
+
+.transaction-period-title strong,
+.transaction-period-title small {
+  display: block;
+}
+
+.transaction-period-title > span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.transaction-period-title > span strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transaction-period-title > span small {
+  padding: 0.18rem 0.42rem;
+  border-radius: 999px;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  font-size: 0.58rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.transaction-period-title > small {
+  margin-top: 0.3rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+}
+
+.transaction-period-toggle > strong {
+  color: var(--text);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.transaction-period-toggle > svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  color: var(--muted);
+  transition: transform 180ms ease;
+}
+
+.transaction-period-toggle > svg.expanded {
+  transform: rotate(180deg);
+}
+
+.transaction-period-rows {
+  padding: 0 1rem;
+  background: var(--surface);
+}
+
+.transaction-period-empty {
+  margin: 0;
+  padding: 1rem 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: center;
 }
 
 .history-row {

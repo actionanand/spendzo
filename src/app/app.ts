@@ -1,6 +1,7 @@
 import { DatePipe, NgOptimizedImage } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Capacitor } from '@capacitor/core';
 import { LucideDynamicIcon } from '@lucide/angular';
 import { ExpenseExportFormat, ExpenseExportRange } from './core/models/export.models';
 import { Expense, ThemePreference } from './core/models/finance.models';
@@ -10,7 +11,12 @@ import { SecurityService } from './core/services/security.service';
 import { SnackbarService } from './core/services/snackbar.service';
 import { ThemeService } from './core/services/theme.service';
 import { FinanceStore } from './core/state/finance.store';
-import { daysInclusive, localDateKey, parseLocalDate } from './core/utils/date-cycle';
+import {
+  calculateCycleBounds,
+  daysInclusive,
+  localDateKey,
+  parseLocalDate,
+} from './core/utils/date-cycle';
 import { formatInr, percentage, rupeesToMinor } from './core/utils/money';
 import { AppSelectOption, AppSelectPicker } from './shared/app-select-picker';
 import { ConfirmationDialog } from './shared/confirmation-dialog';
@@ -26,6 +32,16 @@ interface ConfirmationRequest {
   readonly confirmLabel: string;
   readonly tone: 'danger' | 'warning';
   readonly action: () => void | Promise<void>;
+}
+
+interface TransactionPeriod {
+  readonly key: string;
+  readonly label: string;
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly expenses: readonly Expense[];
+  readonly totalMinor: number;
+  readonly current: boolean;
 }
 
 @Component({
@@ -49,6 +65,7 @@ interface ConfirmationRequest {
     '(window:native-export-cancelled)': 'handleNativeExportCancelled()',
     '(window:native-export-error)': 'handleNativeExportError()',
     '(window:spendzo-back)': 'handleAndroidBack()',
+    '(window:resize)': 'updateSideNavAvailability()',
   },
 })
 export class App {
@@ -67,6 +84,7 @@ export class App {
   protected readonly transactionQuery = signal('');
   protected readonly categoryFilter = signal('');
   protected readonly statisticsPeriod = signal('Current');
+  protected readonly sideNavAvailable = signal(this.isSideNavLayout());
   protected readonly sideNavCollapsed = signal(this.readSideNavCollapsed());
   protected readonly sideNavHintActive = signal(this.readSideNavHintActive());
   protected readonly editingExpenseId = signal<string | null>(null);
@@ -181,6 +199,60 @@ export class App {
   protected readonly filteredTotalMinor = computed(() =>
     this.filteredExpenses().reduce((total, expense) => total + expense.amountMinor, 0),
   );
+
+  protected readonly currentTransactionPeriodKey = computed(
+    () => calculateCycleBounds(new Date(), this.store.settings().budgetCycleStartDay).startDate,
+  );
+
+  protected readonly transactionPeriods = computed<readonly TransactionPeriod[]>(() => {
+    const startDay = this.store.settings().budgetCycleStartDay;
+    const currentKey = this.currentTransactionPeriodKey();
+    const periods = new Map<
+      string,
+      {
+        readonly startDate: string;
+        readonly endDate: string;
+        readonly expenses: Expense[];
+        totalMinor: number;
+      }
+    >();
+
+    for (const expense of this.filteredExpenses()) {
+      const bounds = calculateCycleBounds(parseLocalDate(expense.transactionDate), startDay);
+      const existing = periods.get(bounds.startDate);
+      if (existing) {
+        existing.expenses.push(expense);
+        existing.totalMinor += expense.amountMinor;
+      } else {
+        periods.set(bounds.startDate, {
+          ...bounds,
+          expenses: [expense],
+          totalMinor: expense.amountMinor,
+        });
+      }
+    }
+
+    if (this.filteredExpenses().length && !periods.has(currentKey)) {
+      const currentBounds = calculateCycleBounds(new Date(), startDay);
+      periods.set(currentKey, {
+        ...currentBounds,
+        expenses: [],
+        totalMinor: 0,
+      });
+    }
+
+    return [...periods.entries()]
+      .map(([key, period]) => ({
+        key,
+        ...period,
+        label: this.transactionPeriodLabel(period.startDate, period.endDate, startDay),
+        current: key === currentKey,
+      }))
+      .sort((left, right) => right.startDate.localeCompare(left.startDate));
+  });
+
+  protected readonly expandedTransactionPeriods = signal<ReadonlySet<string>>(new Set());
+  protected readonly currentTransactionPeriodCollapsed = signal(false);
 
   protected readonly overLimitCategories = computed(() =>
     this.store
@@ -434,6 +506,10 @@ export class App {
     if (this.canDeactivate(performNavigation)) performNavigation();
   }
 
+  protected updateSideNavAvailability(): void {
+    this.sideNavAvailable.set(this.isSideNavLayout());
+  }
+
   protected toggleSideNav(): void {
     const collapsed = !this.sideNavCollapsed();
     this.sideNavCollapsed.set(collapsed);
@@ -452,6 +528,26 @@ export class App {
 
   protected changeCategoryFilter(value: string): void {
     this.categoryFilter.set(value);
+  }
+
+  protected transactionPeriodExpanded(period: TransactionPeriod): boolean {
+    return period.current
+      ? !this.currentTransactionPeriodCollapsed()
+      : this.expandedTransactionPeriods().has(period.key);
+  }
+
+  protected toggleTransactionPeriod(period: TransactionPeriod): void {
+    if (period.current) {
+      this.currentTransactionPeriodCollapsed.update((collapsed) => !collapsed);
+      return;
+    }
+
+    this.expandedTransactionPeriods.update((expanded) => {
+      const next = new Set(expanded);
+      if (next.has(period.key)) next.delete(period.key);
+      else next.add(period.key);
+      return next;
+    });
   }
 
   protected openExpense(expense?: Expense): void {
@@ -1046,12 +1142,42 @@ export class App {
     return 'th';
   }
 
+  private transactionPeriodLabel(startDate: string, endDate: string, startDay: number): string {
+    const start = parseLocalDate(startDate);
+    const end = parseLocalDate(endDate);
+    if (startDay === 1) {
+      return new Intl.DateTimeFormat('en-IN', {
+        month: 'long',
+        year: 'numeric',
+      }).format(start);
+    }
+
+    const sameYear = start.getFullYear() === end.getFullYear();
+    const startLabel = new Intl.DateTimeFormat('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: sameYear ? undefined : 'numeric',
+    }).format(start);
+    const endLabel = new Intl.DateTimeFormat('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(end);
+    return `${startLabel} \u2013 ${endLabel}`;
+  }
+
   private readSideNavCollapsed(): boolean {
     try {
       return localStorage.getItem('spendzo-side-nav-collapsed') === 'true';
     } catch {
       return false;
     }
+  }
+
+  private isSideNavLayout(): boolean {
+    if (Capacitor.getPlatform() !== 'web') return false;
+
+    return window.matchMedia?.('(min-width: 900px)').matches ?? window.innerWidth >= 900;
   }
 
   private readSideNavHintActive(): boolean {
