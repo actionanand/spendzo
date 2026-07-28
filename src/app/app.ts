@@ -66,6 +66,7 @@ export class App {
   protected readonly transactionQuery = signal('');
   protected readonly categoryFilter = signal('');
   protected readonly statisticsPeriod = signal('Current');
+  protected readonly sideNavCollapsed = signal(this.readSideNavCollapsed());
   protected readonly editingExpenseId = signal<string | null>(null);
   protected readonly confirmation = signal<ConfirmationRequest | null>(null);
   protected readonly exportFormat = signal<ExpenseExportFormat>('PDF');
@@ -429,6 +430,16 @@ export class App {
       document.querySelector('main')?.focus();
     };
     if (this.canDeactivate(performNavigation)) performNavigation();
+  }
+
+  protected toggleSideNav(): void {
+    const collapsed = !this.sideNavCollapsed();
+    this.sideNavCollapsed.set(collapsed);
+    try {
+      localStorage.setItem('spendzo-side-nav-collapsed', String(collapsed));
+    } catch {
+      // The navigation still works when browser storage is unavailable.
+    }
   }
 
   protected changeTransactionQuery(event: Event): void {
@@ -1029,6 +1040,14 @@ export class App {
     if (day % 10 === 2) return 'nd';
     if (day % 10 === 3) return 'rd';
     return 'th';
+  }
+
+  private readSideNavCollapsed(): boolean {
+    try {
+      return localStorage.getItem('spendzo-side-nav-collapsed') === 'true';
+    } catch {
+      return false;
+    }
   }
 
   private mergeRecords<T extends { readonly id: string }>(

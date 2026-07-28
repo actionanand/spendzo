@@ -1458,6 +1458,10 @@ svg[lucideIcon] {
   height: 1.35rem;
 }
 
+.side-nav-toggle {
+  display: none;
+}
+
 .dialog-scrim {
   position: fixed;
   z-index: 40;
@@ -2056,6 +2060,11 @@ svg[lucideIcon] {
     background: var(--surface);
     box-shadow: var(--shadow-lg);
     flex-direction: column;
+    overflow: hidden;
+    transition:
+      width 180ms ease,
+      padding 180ms ease,
+      border-radius 180ms ease;
   }
 
   .bottom-nav button {
@@ -2065,6 +2074,38 @@ svg[lucideIcon] {
 
   .bottom-nav button span {
     display: none;
+  }
+
+  .bottom-nav .side-nav-toggle {
+    display: grid;
+    height: 2.8rem;
+    margin-top: 0.2rem;
+    border-top: 1px solid var(--border);
+    border-radius: 0 0 0.8rem 0.8rem;
+    color: var(--muted);
+  }
+
+  .bottom-nav .side-nav-toggle:hover {
+    color: var(--accent-strong);
+    background: var(--accent-faint);
+  }
+
+  .bottom-nav.collapsed {
+    width: 3.15rem;
+    padding: 0.25rem;
+    border-radius: 1rem;
+  }
+
+  .bottom-nav.collapsed > button:not(.side-nav-toggle) {
+    display: none;
+  }
+
+  .bottom-nav.collapsed .side-nav-toggle {
+    width: 2.55rem;
+    height: 2.55rem;
+    margin: 0;
+    border-top: 0;
+    border-radius: 0.75rem;
   }
 
   .fab {
