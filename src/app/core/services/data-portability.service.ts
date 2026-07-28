@@ -2,6 +2,16 @@ import { Service } from '@angular/core';
 import { FinanceSnapshot } from '../models/finance.models';
 import { formatInr } from '../utils/money';
 
+interface SpendzoExportBridge {
+  exportBackup(content: string, filename: string, title: string): void;
+}
+
+interface NativeWindow extends Window {
+  SpendzoExport?: SpendzoExportBridge;
+}
+
+export type BackupExportDelivery = 'native' | 'browser';
+
 export interface BackupPreview {
   readonly snapshot: FinanceSnapshot;
   readonly expenseCount: number;
@@ -12,7 +22,7 @@ export interface BackupPreview {
 
 @Service()
 export class DataPortabilityService {
-  exportBackup(snapshot: FinanceSnapshot): void {
+  exportBackup(snapshot: FinanceSnapshot): BackupExportDelivery {
     const safeSnapshot: FinanceSnapshot = {
       ...snapshot,
       settings: {
@@ -24,15 +34,19 @@ export class DataPortabilityService {
         pinIterations: undefined,
       },
     };
-    this.download(
-      `spendzo-backup-${new Date().toISOString().slice(0, 10)}.budgetbackup`,
-      JSON.stringify(
-        { application: 'Spendzo', exportedAt: new Date().toISOString(), ...safeSnapshot },
-        null,
-        2,
-      ),
-      'application/json',
+    const filename = `spendzo-backup-${new Date().toISOString().slice(0, 10)}.budgetbackup`;
+    const contents = JSON.stringify(
+      { application: 'Spendzo', exportedAt: new Date().toISOString(), ...safeSnapshot },
+      null,
+      2,
     );
+    const native = (window as NativeWindow).SpendzoExport;
+    if (native) {
+      native.exportBackup(contents, filename, 'Spendzo backup');
+      return 'native';
+    }
+    this.download(filename, contents, 'application/json');
+    return 'browser';
   }
 
   previewBackup(contents: string): BackupPreview {

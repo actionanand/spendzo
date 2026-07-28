@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
 const appId = 'com.actionanand.spendzo.app';
@@ -20,6 +20,15 @@ async function write(path, contents) {
   await writeFile(path, contents);
 }
 
+async function fileExists(path) {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 let manifest = await readFile(manifestPath, 'utf8');
 if (!manifest.includes('android.permission.USE_BIOMETRIC')) {
   manifest = manifest.replace(
@@ -34,21 +43,10 @@ manifest = manifest
     /(<activity\b(?=[^>]*android:name="\.MainActivity")[^>]*android:theme=")[^"]*(")/,
     '$1@style/AppTheme.NoActionBarLaunch$2',
   );
-if (!manifest.includes('spendzo_file_paths')) {
-  manifest = manifest.replace(
-    '</application>',
-    `        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="\${applicationId}.exports"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/spendzo_file_paths" />
-        </provider>
-    </application>`,
-  );
-}
+manifest = manifest.replace(
+  /\s*<provider\s+android:name="androidx\.core\.content\.FileProvider"\s+android:authorities="\$\{applicationId\}\.exports"[\s\S]*?<\/provider>/g,
+  '',
+);
 await writeFile(manifestPath, manifest);
 
 let gradle = await readFile(gradlePath, 'utf8');
@@ -63,7 +61,7 @@ if (!gradle.includes('androidx.biometric:biometric')) {
 }
 await writeFile(gradlePath, gradle);
 
-const commonStyles = `<?xml version="1.0" encoding="utf-8"?>
+const lightStyles = `<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="colorPrimary">#087F5B</item>
@@ -74,20 +72,35 @@ const commonStyles = `<?xml version="1.0" encoding="utf-8"?>
         <item name="android:windowNoTitle">true</item>
     </style>
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="android:windowBackground">#07150F</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowBackground">#F3F8F5</item>
+        <item name="android:statusBarColor">#F3F8F5</item>
+        <item name="android:navigationBarColor">#F3F8F5</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowNoTitle">true</item>
     </style>
     <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
         <item name="android:windowBackground">@drawable/spendzo_splash_screen</item>
+        <item name="android:statusBarColor">#07150F</item>
+        <item name="android:navigationBarColor">#07150F</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
 </resources>`;
 
-const android12Styles = `<?xml version="1.0" encoding="utf-8"?>
+const darkStyles = lightStyles
+  .replaceAll('#F3F8F5', '#07150F')
+  .replace(
+    '<item name="android:windowLightStatusBar">true</item>',
+    '<item name="android:windowLightStatusBar">false</item>',
+  )
+  .replace(
+    '<item name="android:windowLightNavigationBar">true</item>',
+    '<item name="android:windowLightNavigationBar">false</item>',
+  );
+
+const lightAndroid12Styles = `<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="colorPrimary">#087F5B</item>
@@ -96,11 +109,11 @@ const android12Styles = `<?xml version="1.0" encoding="utf-8"?>
         <item name="android:windowNoTitle">true</item>
     </style>
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="android:windowBackground">#07150F</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowBackground">#F3F8F5</item>
+        <item name="android:statusBarColor">#F3F8F5</item>
+        <item name="android:navigationBarColor">#F3F8F5</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
         <item name="android:windowNoTitle">true</item>
     </style>
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
@@ -108,30 +121,56 @@ const android12Styles = `<?xml version="1.0" encoding="utf-8"?>
         <item name="windowSplashScreenAnimatedIcon">@drawable/spendzo_splash_icon</item>
         <item name="windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <item name="android:statusBarColor">#07150F</item>
+        <item name="android:navigationBarColor">#07150F</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
 </resources>`;
 
-await write(resolve(resources, 'values/styles.xml'), commonStyles);
-await write(resolve(resources, 'values-v31/styles.xml'), android12Styles);
+const darkAndroid12Styles = lightAndroid12Styles
+  .replaceAll('#F3F8F5', '#07150F')
+  .replace(
+    '<item name="android:windowLightStatusBar">true</item>',
+    '<item name="android:windowLightStatusBar">false</item>',
+  )
+  .replace(
+    '<item name="android:windowLightNavigationBar">true</item>',
+    '<item name="android:windowLightNavigationBar">false</item>',
+  );
+
+await write(resolve(resources, 'values/styles.xml'), lightStyles);
+await write(resolve(resources, 'values-night/styles.xml'), darkStyles);
+await write(resolve(resources, 'values-v31/styles.xml'), lightAndroid12Styles);
+await write(resolve(resources, 'values-night-v31/styles.xml'), darkAndroid12Styles);
 await write(
   resolve(resources, 'values/spendzo_colours.xml'),
   `<?xml version="1.0" encoding="utf-8"?><resources><color name="spendzo_splash_background">#07150F</color></resources>`,
 );
+try {
+  for (const directory of await readdir(resources)) {
+    if (!directory.startsWith('drawable')) continue;
+    const generatedSplashPng = resolve(resources, directory, 'splash.png');
+    if (await fileExists(generatedSplashPng)) await rm(generatedSplashPng);
+  }
+} catch {
+  // Capacitor creates these folders during sync; missing generated resources are harmless.
+}
 await write(
   resolve(resources, 'drawable/spendzo_splash_icon.xml'),
   `<?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:gravity="center" android:width="160dp" android:height="160dp">
-        <inset android:drawable="@drawable/spendzo_app_icon" android:insetLeft="22dp" android:insetTop="22dp" android:insetRight="22dp" android:insetBottom="22dp" />
-    </item>
-</layer-list>`,
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/spendzo_splash_logo"
+    android:inset="28%" />`,
 );
 await write(
   resolve(resources, 'drawable/spendzo_splash_screen.xml'),
   `<?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/spendzo_splash_background" />
-    <item android:gravity="center" android:width="138dp" android:height="138dp" android:drawable="@drawable/spendzo_app_icon" />
+    <item android:gravity="center">
+        <inset android:drawable="@drawable/spendzo_splash_icon" android:inset="34%" />
+    </item>
 </layer-list>`,
 );
 await mkdir(resolve(resources, 'drawable-nodpi'), { recursive: true });
@@ -139,17 +178,18 @@ await copyFile(
   resolve('public/spendzo.png'),
   resolve(resources, 'drawable-nodpi/spendzo_app_icon.png'),
 );
-await write(
-  resolve(resources, 'xml/spendzo_file_paths.xml'),
-  `<?xml version="1.0" encoding="utf-8"?>
-<paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <cache-path name="exports" path="exports/" />
-</paths>`,
+await copyFile(
+  resolve('public/spendzo.png'),
+  resolve(resources, 'drawable-nodpi/spendzo_splash_logo.png'),
 );
+const legacyExportPaths = resolve(resources, 'xml/spendzo_file_paths.xml');
+if (await fileExists(legacyExportPaths)) await rm(legacyExportPaths);
 
 const mainActivity = `package ${appId};
 
 import android.content.ContentValues;
+import android.content.Intent;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -179,19 +219,25 @@ import javax.crypto.spec.GCMParameterSpec;
 public class MainActivity extends BridgeActivity {
   private static final String KEY_ALIAS = "spendzo_biometric_key";
   private SpendzoDatabase database;
-  private boolean darkMode = true;
+  private SpendzoExport exportBridge;
+  private boolean darkMode;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
     setTheme(R.style.AppTheme_NoActionBar);
     super.onCreate(savedInstanceState);
+    darkMode = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+      == Configuration.UI_MODE_NIGHT_YES;
     database = new SpendzoDatabase();
-    getBridge().getWebView().setBackgroundColor(Color.parseColor("#07150F"));
+    exportBridge = new SpendzoExport(MainActivity.this);
+    getBridge().getWebView().setBackgroundColor(
+      Color.parseColor(darkMode ? "#07150F" : "#F3F8F5")
+    );
     getBridge().getWebView().addJavascriptInterface(database, "SpendzoDatabase");
     getBridge().getWebView().addJavascriptInterface(new SystemBarsBridge(), "SpendzoSystemBars");
     getBridge().getWebView().addJavascriptInterface(new NativeBridge(), "SpendzoNative");
     getBridge().getWebView().addJavascriptInterface(
-      new SpendzoExport(MainActivity.this),
+      exportBridge,
       "SpendzoExport"
     );
     getOnBackPressedDispatcher().addCallback(
@@ -203,7 +249,15 @@ public class MainActivity extends BridgeActivity {
         }
       }
     );
-    applySystemBars(true);
+    applySystemBars(darkMode);
+  }
+
+  @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    if (exportBridge != null && exportBridge.handleActivityResult(requestCode, resultCode, data)) {
+      return;
+    }
+    super.onActivityResult(requestCode, resultCode, data);
   }
 
   @Override
@@ -358,32 +412,37 @@ public class MainActivity extends BridgeActivity {
     darkMode = dark;
     Window window = getWindow();
     int background = Color.parseColor(dark ? "#07150F" : "#F3F8F5");
+    window.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(background));
+    window.getDecorView().setBackgroundColor(background);
     getBridge().getWebView().setBackgroundColor(background);
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      window.setStatusBarColor(Color.TRANSPARENT);
-      window.setNavigationBarColor(Color.TRANSPARENT);
+    window.setStatusBarColor(background);
+    window.setNavigationBarColor(background);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      window.setStatusBarContrastEnforced(false);
       window.setNavigationBarContrastEnforced(false);
-      window.setDecorFitsSystemWindows(false);
-      WindowInsetsController controller = window.getInsetsController();
+    }
+    View decor = window.getDecorView();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      WindowInsetsController controller = decor.getWindowInsetsController();
       if (controller != null) {
         int lightFlags = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS |
           WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
         controller.setSystemBarsAppearance(dark ? 0 : lightFlags, lightFlags);
       }
-    } else {
-      int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-        View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
-      if (!dark && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-      }
-      if (!dark && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-      }
-      window.getDecorView().setSystemUiVisibility(flags);
-      window.setStatusBarColor(Color.TRANSPARENT);
-      window.setNavigationBarColor(Color.TRANSPARENT);
+      return;
     }
+    int flags = decor.getSystemUiVisibility();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      flags = dark
+        ? flags & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        : flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      flags = dark
+        ? flags & ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        : flags | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+    }
+    decor.setSystemUiVisibility(flags);
   }
 
   private class SpendzoDatabase extends SQLiteOpenHelper {
@@ -439,7 +498,7 @@ public class MainActivity extends BridgeActivity {
 
 const exportBridge = `package ${appId};
 
-import android.content.ClipData;
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -448,33 +507,33 @@ import android.graphics.Typeface;
 import android.graphics.pdf.PdfDocument;
 import android.net.Uri;
 import android.webkit.JavascriptInterface;
-import androidx.core.content.FileProvider;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 final class SpendzoExport {
+  private static final int CREATE_DOCUMENT_REQUEST = 7319;
   private final MainActivity activity;
+  private byte[] pendingContents;
 
   SpendzoExport(MainActivity activity) {
     this.activity = activity;
   }
 
   @JavascriptInterface
+  public void exportBackup(String content, String filename, String title) {
+    requestSave(
+      content.getBytes(StandardCharsets.UTF_8),
+      filename,
+      "application/octet-stream"
+    );
+  }
+
+  @JavascriptInterface
   public void exportCsv(String content, String filename, String title) {
-    new Thread(() -> {
-      try {
-        File file = exportFile(filename, ".csv");
-        try (FileOutputStream output = new FileOutputStream(file)) {
-          output.write(content.getBytes(StandardCharsets.UTF_8));
-        }
-        share(file, "text/csv", title);
-      } catch (Exception ignored) {
-        dispatch("native-export-error");
-      }
-    }).start();
+    requestSave(content.getBytes(StandardCharsets.UTF_8), filename, "text/csv");
   }
 
   @JavascriptInterface
@@ -484,11 +543,9 @@ final class SpendzoExport {
       try {
         JSONObject report = new JSONObject(content);
         new PdfReportRenderer(document).render(report);
-        File file = exportFile(filename, ".pdf");
-        try (FileOutputStream output = new FileOutputStream(file)) {
-          document.writeTo(output);
-        }
-        share(file, "application/pdf", title);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        document.writeTo(output);
+        requestSave(output.toByteArray(), filename, "application/pdf");
       } catch (Exception ignored) {
         dispatch("native-export-error");
       } finally {
@@ -497,38 +554,49 @@ final class SpendzoExport {
     }).start();
   }
 
-  private File exportFile(String requestedName, String extension) throws Exception {
-    File directory = new File(activity.getCacheDir(), "exports");
-    if (!directory.exists() && !directory.mkdirs()) {
-      throw new IllegalStateException("Unable to create export cache");
-    }
-    String safeName = requestedName == null
-      ? "spendzo-export" + extension
-      : requestedName.replaceAll("[^A-Za-z0-9._-]", "-");
-    if (!safeName.endsWith(extension)) safeName += extension;
-    return new File(directory, safeName);
+  private void requestSave(byte[] contents, String requestedName, String mimeType) {
+    activity.runOnUiThread(() -> {
+      if (pendingContents != null) {
+        dispatch("native-export-error");
+        return;
+      }
+      try {
+        pendingContents = contents;
+        String filename = requestedName == null
+          ? "spendzo-export"
+          : requestedName.replaceAll("[^A-Za-z0-9._-]", "-");
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType(mimeType);
+        intent.putExtra(Intent.EXTRA_TITLE, filename);
+        activity.startActivityForResult(intent, CREATE_DOCUMENT_REQUEST);
+      } catch (Exception ignored) {
+        pendingContents = null;
+        dispatch("native-export-error");
+      }
+    });
   }
 
-  private void share(File file, String mimeType, String title) {
-    activity.runOnUiThread(() -> {
-      try {
-        Uri uri = FileProvider.getUriForFile(
-          activity,
-          activity.getPackageName() + ".exports",
-          file
-        );
-        Intent intent = new Intent(Intent.ACTION_SEND);
-        intent.setType(mimeType);
-        intent.putExtra(Intent.EXTRA_STREAM, uri);
-        intent.putExtra(Intent.EXTRA_TITLE, title);
-        intent.setClipData(ClipData.newRawUri(title, uri));
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        activity.startActivity(Intent.createChooser(intent, "Save or share Spendzo export"));
+  boolean handleActivityResult(int requestCode, int resultCode, Intent data) {
+    if (requestCode != CREATE_DOCUMENT_REQUEST) return false;
+    byte[] contents = pendingContents;
+    pendingContents = null;
+    Uri destination = data == null ? null : data.getData();
+    if (resultCode != Activity.RESULT_OK || destination == null || contents == null) {
+      dispatch("native-export-cancelled");
+      return true;
+    }
+    new Thread(() -> {
+      try (OutputStream output = activity.getContentResolver().openOutputStream(destination, "w")) {
+        if (output == null) throw new IllegalStateException("Unable to open selected file");
+        output.write(contents);
+        output.flush();
         dispatch("native-export-ready");
       } catch (Exception ignored) {
         dispatch("native-export-error");
       }
-    });
+    }).start();
+    return true;
   }
 
   private void dispatch(String eventName) {

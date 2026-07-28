@@ -14,6 +14,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  MIN_SDK_VERSION: 24
+  TARGET_SDK_VERSION: 35
   RELEASE_BASENAME: spendzo-release
 
 jobs:
@@ -24,27 +26,25 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '24.16.0'
+          node-version-file: '.nvmrc'
           cache: npm
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: gradle
+      - name: Verify Node.js version
+        shell: bash
+        run: |
+          EXPECTED_NODE=$(tr -d '[:space:]' < .nvmrc)
+          ACTUAL_NODE=$(node --version)
+          test "$ACTUAL_NODE" = "v$EXPECTED_NODE"
+          echo "✅ Using Node.js $ACTUAL_NODE from .nvmrc"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Automatically bump Android versionCode
+      - name: Bump versionCode and commit
         if: github.ref == 'refs/heads/main-android'
         shell: bash
         run: |
@@ -53,7 +53,7 @@ jobs:
           node scripts/bump-android-version.js
           VERSION_CODE=$(node -p "require('./android-version.json').versionCode")
           VERSION_NAME=$(node -p "require('./android-version.json').versionName")
-          echo "Building versionName=$VERSION_NAME versionCode=$VERSION_CODE"
+          echo "🔢 Building versionName=$VERSION_NAME versionCode=$VERSION_CODE"
           git pull --rebase --autostash
           git add android-version.json
           if git diff --cached --quiet; then
@@ -87,7 +87,39 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
-          node scripts/patch-android.mjs
+
+      # Gradle files do not exist until Capacitor generates android/.
+      # Keep setup-java with Gradle caching after the generation step.
+      - name: Set up Java and Gradle cache
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Apply SDK and release versions
+        working-directory: android/app
+        shell: bash
+        run: |
+          sed -i 's/versionCode [0-9]*/versionCode project.hasProperty("versionCode") ? project.versionCode.toInteger() : 1/' build.gradle
+          sed -i 's/versionName "[^"]*"/versionName project.hasProperty("versionName") ? project.versionName : "1.0.0"/' build.gradle
+          sed -i "s/minSdkVersion = .*/minSdkVersion = $MIN_SDK_VERSION/" ../variables.gradle
+          sed -i "s/targetSdkVersion = .*/targetSdkVersion = $TARGET_SDK_VERSION/" ../variables.gradle
+          grep -Fq 'project.hasProperty("versionCode")' build.gradle
+          grep -Fq 'project.hasProperty("versionName")' build.gradle
+          grep -Fq "minSdkVersion = $MIN_SDK_VERSION" ../variables.gradle
+          grep -Fq "targetSdkVersion = $TARGET_SDK_VERSION" ../variables.gradle
+          echo "✅ Applied versionName=$VERSION_NAME versionCode=$VERSION_CODE"
+          echo "✅ Applied minSdkVersion=$MIN_SDK_VERSION targetSdkVersion=$TARGET_SDK_VERSION"
+
+      - name: Patch Android native shell
+        run: node scripts/patch-android.mjs
 
       - name: Make Gradle executable
         run: chmod +x android/gradlew
@@ -107,79 +139,123 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.KEY_PASSWORD }}
         run: |
-          if [[ -n "$KEYSTORE_BASE64" && -n "$KEYSTORE_PASSWORD" && -n "$KEY_ALIAS" && -n "$KEY_PASSWORD" ]]; then
+          if [[ -n "$KEYSTORE_BASE64" && -n "$KEYSTORE_PASSWORD" && -n "$KEY_ALIAS" ]]; then
             if printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/spendzo-release.jks"; then
               echo "available=true" >> "$GITHUB_OUTPUT"
-              echo "Signing credentials found. Signed APK and AAB files will be built."
+              echo "🔐 Signing credentials found. Signed APK and AAB files will be built."
             else
               rm -f "$RUNNER_TEMP/spendzo-release.jks"
               echo "available=false" >> "$GITHUB_OUTPUT"
-              echo "Keystore decoding failed. Unsigned release files will be built."
+              echo "⚠️ Keystore decoding failed. Unsigned release files will be built."
             fi
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "Signing secrets are incomplete. Unsigned release files will be built."
+            echo "⚠️ Keystore, store password, or alias is missing. Unsigned release files will be built."
           fi
 
-      - name: Verify signing keystore
+      - name: Detect keystore type
+        id: keystore_type
         if: steps.keystore.outputs.available == 'true'
+        continue-on-error: true
+        shell: bash
         env:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
-        run: node scripts/detect-keystore-format.mjs "$RUNNER_TEMP/spendzo-release.jks"
+        run: |
+          DETECTION=$(node scripts/detect-keystore-format.mjs "$RUNNER_TEMP/spendzo-release.jks")
+          echo "$DETECTION"
+          KEYSTORE_TYPE=$(printf '%s\n' "$DETECTION" | awk -F': ' '/Keystore type:/ { print toupper($2); exit }')
+          test -n "$KEYSTORE_TYPE"
+          test "$KEYSTORE_TYPE" != "UNKNOWN"
+          echo "type=$KEYSTORE_TYPE" >> "$GITHUB_OUTPUT"
+          echo "🔎 Detected keystore type: $KEYSTORE_TYPE"
 
       - name: Build release APK and AAB
         working-directory: android
         shell: bash
         env:
-          HAS_KEYSTORE: ${{ steps.keystore.outputs.available }}
+          CAN_SIGN: ${{ steps.keystore.outputs.available == 'true' && steps.keystore_type.outcome == 'success' }}
+          KEYSTORE_TYPE: ${{ steps.keystore_type.outputs.type }}
           KEYSTORE_PATH: ${{ runner.temp }}/spendzo-release.jks
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.KEY_PASSWORD }}
         run: |
-          GRADLE_ARGS=(assembleRelease bundleRelease --no-daemon)
-          if [[ "$HAS_KEYSTORE" == "true" ]]; then
-            GRADLE_ARGS+=(
+          BASE_GRADLE_ARGS=(
+            assembleRelease
+            bundleRelease
+            --no-daemon
+            "-PversionCode=$VERSION_CODE"
+            "-PversionName=$VERSION_NAME"
+          )
+
+          SIGNED_BUILD=false
+          if [[ "$CAN_SIGN" == "true" ]]; then
+            EFFECTIVE_KEY_PASSWORD="$KEY_PASSWORD"
+            if [[ "$KEYSTORE_TYPE" == "PKCS12" ]]; then
+              EFFECTIVE_KEY_PASSWORD="$KEYSTORE_PASSWORD"
+              echo "🔐 PKCS12 detected; using the keystore password for private-key decryption."
+            fi
+
+            SIGNING_ARGS=(
               "-Pandroid.injected.signing.store.file=$KEYSTORE_PATH"
               "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD"
               "-Pandroid.injected.signing.key.alias=$KEY_ALIAS"
-              "-Pandroid.injected.signing.key.password=$KEY_PASSWORD"
+              "-Pandroid.injected.signing.key.password=$EFFECTIVE_KEY_PASSWORD"
             )
+
+            if ./gradlew "${BASE_GRADLE_ARGS[@]}" "${SIGNING_ARGS[@]}"; then
+              SIGNED_BUILD=true
+            else
+              echo "⚠️ Signing failed. Rebuilding unsigned APK and AAB artifacts."
+              ./gradlew clean --no-daemon
+              ./gradlew "${BASE_GRADLE_ARGS[@]}"
+            fi
+          else
+            echo "⚠️ A readable signing keystore is unavailable. Building unsigned artifacts."
+            ./gradlew "${BASE_GRADLE_ARGS[@]}"
           fi
-          ./gradlew "${GRADLE_ARGS[@]}"
+
+          echo "SIGNED_BUILD=$SIGNED_BUILD" >> "$GITHUB_ENV"
 
       - name: Copy APK and AAB to releases
         shell: bash
-        env:
-          HAS_KEYSTORE: ${{ steps.keystore.outputs.available }}
         run: |
           APK_SOURCE=$(find android/app/build/outputs/apk/release -type f -name '*.apk' | head -1)
           AAB_SOURCE=$(find android/app/build/outputs/bundle/release -type f -name '*.aab' | head -1)
           test -s "$APK_SOURCE"
           test -s "$AAB_SOURCE"
-          if [[ "$HAS_KEYSTORE" == "true" ]]; then
+          if [[ "$SIGNED_BUILD" == "true" ]]; then
             APK_TARGET="releases/${RELEASE_FILE_BASENAME}.apk"
             AAB_TARGET="releases/${RELEASE_FILE_BASENAME}.aab"
+            APK_STATUS="✅ SIGNED APK created: $APK_TARGET"
+            AAB_STATUS="✅ SIGNED AAB created: $AAB_TARGET"
           else
             APK_TARGET="releases/${RELEASE_FILE_BASENAME}-unsigned.apk"
             AAB_TARGET="releases/${RELEASE_FILE_BASENAME}-unsigned.aab"
+            APK_STATUS="⚠️ UNSIGNED APK created: $APK_TARGET"
+            AAB_STATUS="⚠️ UNSIGNED AAB created: $AAB_TARGET"
           fi
           cp "$APK_SOURCE" "$APK_TARGET"
           cp "$AAB_SOURCE" "$AAB_TARGET"
           echo "APK_TARGET=$APK_TARGET" >> "$GITHUB_ENV"
           echo "AAB_TARGET=$AAB_TARGET" >> "$GITHUB_ENV"
-          echo "Created $APK_TARGET"
-          echo "Created $AAB_TARGET"
+          echo "APK_STATUS=$APK_STATUS" >> "$GITHUB_ENV"
+          echo "AAB_STATUS=$AAB_STATUS" >> "$GITHUB_ENV"
+          echo "$APK_STATUS"
+          echo "$AAB_STATUS"
 
       - name: Summarize Android artifacts
         shell: bash
         run: |
           test -s "$APK_TARGET"
           test -s "$AAB_TARGET"
+          echo "📦 Android artifact summary"
+          echo "$APK_STATUS"
+          echo "$AAB_STATUS"
           {
-            echo "## Android release $VERSION_NAME ($VERSION_CODE)"
-            echo "- APK: \`$APK_TARGET\`"
-            echo "- AAB: \`$AAB_TARGET\`"
+            echo "## 📦 Android release $VERSION_NAME ($VERSION_CODE)"
+            echo "- $APK_STATUS"
+            echo "- $AAB_STATUS"
           } >> "$GITHUB_STEP_SUMMARY"
           ls -lh releases/
 
@@ -202,7 +278,7 @@ jobs:
           fi
 
       - name: Upload Android artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: spendzo-android-${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}
           path: |
@@ -213,7 +289,7 @@ jobs:
 
       - name: Attach files to GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             releases/*.apk

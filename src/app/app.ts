@@ -18,6 +18,7 @@ import { ReportChart } from './shared/report-chart';
 
 type Page = 'home' | 'transactions' | 'statistics' | 'budgets' | 'settings';
 type Dialog = 'expense' | 'income' | 'budget' | 'category' | 'pin' | 'import' | 'export' | null;
+const SIDE_NAV_HINT_SESSION_KEY = 'spendzo-side-nav-hint-v4-clicked';
 
 interface ConfirmationRequest {
   readonly title: string;
@@ -45,6 +46,7 @@ interface ConfirmationRequest {
     '(window:biometric-success)': 'handleBiometricSuccess()',
     '(window:biometric-enabled)': 'handleBiometricEnabled()',
     '(window:native-export-ready)': 'handleNativeExportReady()',
+    '(window:native-export-cancelled)': 'handleNativeExportCancelled()',
     '(window:native-export-error)': 'handleNativeExportError()',
     '(window:spendzo-back)': 'handleAndroidBack()',
   },
@@ -64,7 +66,9 @@ export class App {
   protected readonly formError = signal('');
   protected readonly transactionQuery = signal('');
   protected readonly categoryFilter = signal('');
-  protected readonly statisticsPeriod = signal('Current cycle');
+  protected readonly statisticsPeriod = signal('Current');
+  protected readonly sideNavCollapsed = signal(this.readSideNavCollapsed());
+  protected readonly sideNavHintActive = signal(this.readSideNavHintActive());
   protected readonly editingExpenseId = signal<string | null>(null);
   protected readonly confirmation = signal<ConfirmationRequest | null>(null);
   protected readonly exportFormat = signal<ExpenseExportFormat>('PDF');
@@ -430,6 +434,18 @@ export class App {
     if (this.canDeactivate(performNavigation)) performNavigation();
   }
 
+  protected toggleSideNav(): void {
+    const collapsed = !this.sideNavCollapsed();
+    this.sideNavCollapsed.set(collapsed);
+    this.sideNavHintActive.set(false);
+    try {
+      localStorage.setItem('spendzo-side-nav-collapsed', String(collapsed));
+    } catch {
+      // The navigation still works when browser storage is unavailable.
+    }
+    this.markSideNavHintSeen();
+  }
+
   protected changeTransactionQuery(event: Event): void {
     this.transactionQuery.set((event.target as HTMLInputElement).value);
   }
@@ -704,7 +720,11 @@ export class App {
   }
 
   protected handleNativeExportReady(): void {
-    this.snackbar.show('Export is ready. Choose an app to save or share it.');
+    this.snackbar.show('File saved to the selected location.');
+  }
+
+  protected handleNativeExportCancelled(): void {
+    this.snackbar.show('Save cancelled.', 'INFO');
   }
 
   protected handleNativeExportError(): void {
@@ -739,8 +759,10 @@ export class App {
   }
 
   protected exportBackup(): void {
-    this.portability.exportBackup(this.store.snapshot());
-    this.showMessage('Backup exported without PIN or biometric secrets.');
+    const delivery = this.portability.exportBackup(this.store.snapshot());
+    if (delivery === 'browser') {
+      this.showMessage('Backup exported without PIN or biometric secrets.');
+    }
   }
 
   protected openExpenseExport(format: ExpenseExportFormat): void {
@@ -992,8 +1014,8 @@ export class App {
 
   private statisticsRange(): { readonly startDate: string; readonly endDate: string } | null {
     const period = this.statisticsPeriod();
-    if (period === 'All time') return null;
-    if (period === 'Current cycle') {
+    if (period === 'All') return null;
+    if (period === 'Current') {
       return {
         startDate: this.store.activeCycle().startDate,
         endDate: this.store.activeCycle().endDate,
@@ -1022,6 +1044,30 @@ export class App {
     if (day % 10 === 2) return 'nd';
     if (day % 10 === 3) return 'rd';
     return 'th';
+  }
+
+  private readSideNavCollapsed(): boolean {
+    try {
+      return localStorage.getItem('spendzo-side-nav-collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  private readSideNavHintActive(): boolean {
+    try {
+      return sessionStorage.getItem(SIDE_NAV_HINT_SESSION_KEY) !== 'true';
+    } catch {
+      return true;
+    }
+  }
+
+  private markSideNavHintSeen(): void {
+    try {
+      sessionStorage.setItem(SIDE_NAV_HINT_SESSION_KEY, 'true');
+    } catch {
+      // The hint still works for the current page when session storage is unavailable.
+    }
   }
 
   private mergeRecords<T extends { readonly id: string }>(
