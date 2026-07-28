@@ -30,6 +30,10 @@ npm run android:version:major
 Every command increments `versionCode`. The selected command also updates semantic
 `versionName`.
 
+Pushes to `main-android` increment only `versionCode` automatically before the build.
+`versionName` remains unchanged. GitHub Actions commits the updated `android-version.json` with
+`[skip ci]`.
+
 ## What the native patch provides
 
 - SQLite storage behind the `SpendzoDatabase` repository bridge.
@@ -45,13 +49,16 @@ Run `npm run android:patch` again after every `npx cap sync android`.
 
 ## GitHub Actions
 
-`.github/workflows/android-build.yml` runs lint, unit tests, the Angular production build,
-Capacitor synchronisation, native patching, Java setup, and Gradle.
+`.github/workflows/android-build.yml` runs lint, the Angular production build, Capacitor
+synchronisation, native patching, Java setup, and a release Gradle build.
 
-- Branches and pull requests produce a debug APK.
-- tags matching `v*` produce a signed APK and AAB.
-- Outputs are copied into `release/`, uploaded as workflow artifacts, and attached to a GitHub
-  Release for version tags.
+- Every push to `main-android` automatically increments `versionCode` only.
+- Every `main-android` build produces a release APK and AAB, even when signing secrets are absent.
+- With signing secrets, filenames are `releases/spendzo-release-x-y-z.apk` and `.aab`.
+- Without signing secrets, the files receive an `-unsigned` suffix.
+- APK and AAB files in `releases/` are committed back to `main-android` and also uploaded as
+  workflow artifacts.
+- Tags matching `v*` attach the same APK and AAB to a GitHub Release.
 
 Configure these GitHub Actions secrets:
 
@@ -81,8 +88,8 @@ be signed with the same key.
 
 ## Release
 
-1. Bump `android-version.json`.
-2. Commit and push the version change.
-3. Tag the same version, for example `v1.0.1`.
-4. Push the tag.
-5. Download the APK/AAB from the workflow's `release/` artifact or the generated GitHub Release.
+1. Push application changes to `main-android`.
+2. GitHub Actions bumps and commits the Android version.
+3. The workflow commits the generated APK/AAB to `releases/` and uploads them as artifacts.
+4. For a formal GitHub Release, tag the resulting version commit, for example `v1.0.1`, and push
+   the tag.

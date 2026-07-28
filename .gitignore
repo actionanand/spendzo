@@ -46,9 +46,7 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 
-# Generated Android project, signing material and release binaries
+# Generated Android project and signing material
 /android
-/release/*
-!/release/.gitkeep
 *.jks
 *.keystore
