@@ -2287,29 +2287,4 @@ svg[lucideIcon] {
     scroll-behavior: auto !important;
     transition: none !important;
   }
-
-  .bottom-nav .side-nav-toggle.discovery-hint {
-    color: var(--accent-strong);
-    background: var(--accent-faint);
-    animation: none;
-  }
-
-  .bottom-nav .side-nav-toggle.discovery-hint::after {
-    display: none;
-    animation: none;
-  }
-
-  .bottom-nav .side-nav-click-coach {
-    right: -2.8rem;
-    bottom: -2.3rem;
-    display: grid;
-    animation: none;
-  }
-
-  .bottom-nav .side-nav-click-coach strong,
-  .bottom-nav .side-nav-click-coach span {
-    opacity: 1;
-    animation: none;
-    transform: none;
-  }
 }

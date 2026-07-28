@@ -18,7 +18,7 @@ import { ReportChart } from './shared/report-chart';
 
 type Page = 'home' | 'transactions' | 'statistics' | 'budgets' | 'settings';
 type Dialog = 'expense' | 'income' | 'budget' | 'category' | 'pin' | 'import' | 'export' | null;
-const SIDE_NAV_HINT_SESSION_KEY = 'spendzo-side-nav-hint-v3-clicked';
+const SIDE_NAV_HINT_SESSION_KEY = 'spendzo-side-nav-hint-v4-clicked';
 
 interface ConfirmationRequest {
   readonly title: string;

@@ -4,7 +4,7 @@ import { appConfig } from './app.config';
 
 describe('App', () => {
   beforeEach(async () => {
-    sessionStorage.removeItem('spendzo-side-nav-hint-v3-clicked');
+    sessionStorage.removeItem('spendzo-side-nav-hint-v4-clicked');
     await TestBed.configureTestingModule({
       imports: [App],
       providers: appConfig.providers,
@@ -37,7 +37,7 @@ describe('App', () => {
     expect(toggle).toBeTruthy();
     expect(toggle?.classList.contains('discovery-hint')).toBe(true);
     expect(navigation?.querySelector('.side-nav-click-coach')).toBeTruthy();
-    expect(sessionStorage.getItem('spendzo-side-nav-hint-v3-clicked')).toBeNull();
+    expect(sessionStorage.getItem('spendzo-side-nav-hint-v4-clicked')).toBeNull();
 
     const initiallyCollapsed = navigation?.classList.contains('collapsed') ?? false;
     toggle?.click();
@@ -45,7 +45,7 @@ describe('App', () => {
     expect(navigation?.classList.contains('collapsed')).toBe(!initiallyCollapsed);
     expect(toggle?.classList.contains('discovery-hint')).toBe(false);
     expect(navigation?.querySelector('.side-nav-click-coach')).toBeNull();
-    expect(sessionStorage.getItem('spendzo-side-nav-hint-v3-clicked')).toBe('true');
+    expect(sessionStorage.getItem('spendzo-side-nav-hint-v4-clicked')).toBe('true');
     expect(toggle?.getAttribute('aria-label')).toBe(
       initiallyCollapsed ? 'Collapse navigation' : 'Expand navigation',
     );
