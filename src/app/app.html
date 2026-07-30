@@ -1291,16 +1291,23 @@
             <svg lucideIcon="x" aria-hidden="true"></svg>
           </button>
         </header>
-        <label class="file-picker"
-          ><svg lucideIcon="file-up" aria-hidden="true"></svg
-          ><span
-            ><strong>Choose .budgetbackup file</strong
-            ><small>The file is validated before any data changes.</small></span
-          ><input
-            type="file"
-            accept=".budgetbackup,application/json"
-            (change)="chooseBackup($event)"
-        /></label>
+        @if (nativeBackupImport) {
+          <button class="file-picker" type="button" (click)="chooseNativeBackup()">
+            <svg lucideIcon="file-up" aria-hidden="true"></svg>
+            <span>
+              <strong>Choose .budgetbackup file</strong>
+              <small>The file is validated before any data changes.</small>
+            </span>
+          </button>
+        } @else {
+          <label class="file-picker"
+            ><svg lucideIcon="file-up" aria-hidden="true"></svg
+            ><span
+              ><strong>Choose .budgetbackup file</strong
+              ><small>The file is validated before any data changes.</small></span
+            ><input type="file" accept=".budgetbackup" (change)="chooseBackup($event)"
+          /></label>
+        }
         @if (backupPreview(); as preview) {
           <div class="preview-grid">
             <div>

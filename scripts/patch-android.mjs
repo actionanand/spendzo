@@ -13,6 +13,11 @@ const exportJavaPath = resolve(
   ...appId.split('.'),
   'SpendzoExport.java',
 );
+const importJavaPath = resolve(
+  'android/app/src/main/java',
+  ...appId.split('.'),
+  'SpendzoImport.java',
+);
 const version = JSON.parse(await readFile(resolve('android-version.json'), 'utf8'));
 
 async function write(path, contents) {
@@ -220,6 +225,7 @@ public class MainActivity extends BridgeActivity {
   private static final String KEY_ALIAS = "spendzo_biometric_key";
   private SpendzoDatabase database;
   private SpendzoExport exportBridge;
+  private SpendzoImport importBridge;
   private boolean darkMode;
 
   @Override
@@ -230,6 +236,7 @@ public class MainActivity extends BridgeActivity {
       == Configuration.UI_MODE_NIGHT_YES;
     database = new SpendzoDatabase();
     exportBridge = new SpendzoExport(MainActivity.this);
+    importBridge = new SpendzoImport(MainActivity.this);
     getBridge().getWebView().setBackgroundColor(
       Color.parseColor(darkMode ? "#07150F" : "#F3F8F5")
     );
@@ -239,6 +246,10 @@ public class MainActivity extends BridgeActivity {
     getBridge().getWebView().addJavascriptInterface(
       exportBridge,
       "SpendzoExport"
+    );
+    getBridge().getWebView().addJavascriptInterface(
+      importBridge,
+      "SpendzoImport"
     );
     getOnBackPressedDispatcher().addCallback(
       this,
@@ -255,6 +266,9 @@ public class MainActivity extends BridgeActivity {
   @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     if (exportBridge != null && exportBridge.handleActivityResult(requestCode, resultCode, data)) {
+      return;
+    }
+    if (importBridge != null && importBridge.handleActivityResult(requestCode, resultCode, data)) {
       return;
     }
     super.onActivityResult(requestCode, resultCode, data);
@@ -492,6 +506,132 @@ public class MainActivity extends BridgeActivity {
         SQLiteDatabase.CONFLICT_REPLACE
       );
     }
+  }
+}
+`;
+
+const importBridge = `package ${appId};
+
+import android.app.Activity;
+import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.OpenableColumns;
+import android.util.Base64;
+import android.webkit.JavascriptInterface;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.util.Locale;
+
+final class SpendzoImport {
+  private static final int OPEN_BACKUP_REQUEST = 7320;
+  private static final int MAX_BACKUP_BYTES = 20 * 1024 * 1024;
+  private final MainActivity activity;
+
+  SpendzoImport(MainActivity activity) {
+    this.activity = activity;
+  }
+
+  @JavascriptInterface
+  public void chooseBackup() {
+    activity.runOnUiThread(() -> {
+      try {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/octet-stream");
+        intent.putExtra(
+          Intent.EXTRA_MIME_TYPES,
+          new String[] { "application/octet-stream" }
+        );
+        activity.startActivityForResult(intent, OPEN_BACKUP_REQUEST);
+      } catch (Exception ignored) {
+        dispatch("native-import-error");
+      }
+    });
+  }
+
+  boolean handleActivityResult(int requestCode, int resultCode, Intent data) {
+    if (requestCode != OPEN_BACKUP_REQUEST) return false;
+    Uri source = data == null ? null : data.getData();
+    if (resultCode != Activity.RESULT_OK || source == null) return true;
+
+    new Thread(() -> readBackup(source)).start();
+    return true;
+  }
+
+  private void readBackup(Uri source) {
+    try {
+      String displayName = displayName(source);
+      if (
+        displayName == null ||
+        !displayName.toLowerCase(Locale.ROOT).endsWith(".budgetbackup")
+      ) {
+        dispatch("native-import-invalid-file");
+        return;
+      }
+
+      byte[] contents;
+      try (InputStream input = activity.getContentResolver().openInputStream(source)) {
+        if (input == null) throw new IllegalStateException("Unable to open selected backup");
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int total = 0;
+        int count;
+        while ((count = input.read(buffer)) != -1) {
+          total += count;
+          if (total > MAX_BACKUP_BYTES) {
+            throw new IllegalStateException("Backup is too large");
+          }
+          output.write(buffer, 0, count);
+        }
+        contents = output.toByteArray();
+      }
+
+      if (contents.length == 0) throw new IllegalStateException("Backup is empty");
+      dispatchWithDetail(
+        "native-import-ready",
+        Base64.encodeToString(contents, Base64.NO_WRAP)
+      );
+    } catch (Exception ignored) {
+      dispatch("native-import-error");
+    }
+  }
+
+  private String displayName(Uri source) {
+    try (
+      Cursor cursor = activity.getContentResolver().query(
+        source,
+        new String[] { OpenableColumns.DISPLAY_NAME },
+        null,
+        null,
+        null
+      )
+    ) {
+      if (cursor != null && cursor.moveToFirst()) {
+        int column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+        if (column >= 0) return cursor.getString(column);
+      }
+    } catch (Exception ignored) {}
+    return source.getLastPathSegment();
+  }
+
+  private void dispatch(String eventName) {
+    activity.getBridge().getWebView().post(() ->
+      activity.getBridge().getWebView().evaluateJavascript(
+        "window.dispatchEvent(new CustomEvent('" + eventName + "'))",
+        null
+      )
+    );
+  }
+
+  private void dispatchWithDetail(String eventName, String detail) {
+    activity.getBridge().getWebView().post(() ->
+      activity.getBridge().getWebView().evaluateJavascript(
+        "window.dispatchEvent(new CustomEvent('" + eventName +
+          "',{detail:'" + detail + "'}))",
+        null
+      )
+    );
   }
 }
 `;
@@ -764,4 +904,5 @@ final class SpendzoExport {
 
 await write(javaPath, mainActivity);
 await write(exportJavaPath, exportBridge);
+await write(importJavaPath, importBridge);
 console.log(`Patched Android project for Spendzo ${version.versionName} (${version.versionCode}).`);
