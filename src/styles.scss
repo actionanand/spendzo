@@ -1715,6 +1715,7 @@ svg[lucideIcon] {
 .file-picker {
   position: relative;
   display: flex;
+  width: 100%;
   min-height: 5rem;
   align-items: center;
   gap: 0.8rem;
@@ -1723,6 +1724,8 @@ svg[lucideIcon] {
   border-radius: 1rem;
   color: var(--accent-strong);
   background: var(--accent-faint);
+  font: inherit;
+  text-align: left;
 }
 
 .file-picker input {

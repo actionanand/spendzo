@@ -44,6 +44,14 @@ interface TransactionPeriod {
   readonly current: boolean;
 }
 
+interface SpendzoImportBridge {
+  chooseBackup(): void;
+}
+
+interface SpendzoImportWindow extends Window {
+  SpendzoImport?: SpendzoImportBridge;
+}
+
 @Component({
   selector: 'app-root',
   imports: [
@@ -64,6 +72,9 @@ interface TransactionPeriod {
     '(window:native-export-ready)': 'handleNativeExportReady()',
     '(window:native-export-cancelled)': 'handleNativeExportCancelled()',
     '(window:native-export-error)': 'handleNativeExportError()',
+    '(window:native-import-ready)': 'handleNativeImportReady($event)',
+    '(window:native-import-invalid-file)': 'handleNativeImportInvalidFile()',
+    '(window:native-import-error)': 'handleNativeImportError()',
     '(window:spendzo-back)': 'handleAndroidBack()',
     '(window:resize)': 'updateSideNavAvailability()',
   },
@@ -85,6 +96,7 @@ export class App {
   protected readonly categoryFilter = signal('');
   protected readonly statisticsPeriod = signal('Current');
   protected readonly sideNavAvailable = signal(this.isSideNavLayout());
+  protected readonly nativeBackupImport = Capacitor.getPlatform() === 'android';
   protected readonly sideNavCollapsed = signal(this.readSideNavCollapsed());
   protected readonly sideNavHintActive = signal(this.readSideNavHintActive());
   protected readonly editingExpenseId = signal<string | null>(null);
@@ -827,6 +839,27 @@ export class App {
     this.snackbar.show('The export could not be created.', 'WARNING');
   }
 
+  protected handleNativeImportReady(event: Event): void {
+    try {
+      const encodedContents = (event as CustomEvent<string>).detail;
+      if (!encodedContents) throw new Error('The selected backup was empty.');
+      const bytes = Uint8Array.from(atob(encodedContents), (character) => character.charCodeAt(0));
+      this.loadBackupContents(new TextDecoder().decode(bytes));
+    } catch (error) {
+      this.clearBackupPreview(
+        error instanceof Error ? error.message : 'The backup could not be read.',
+      );
+    }
+  }
+
+  protected handleNativeImportInvalidFile(): void {
+    this.clearBackupPreview('Choose a file ending in .budgetbackup.');
+  }
+
+  protected handleNativeImportError(): void {
+    this.clearBackupPreview('The selected backup could not be read.');
+  }
+
   protected handleAndroidBack(): void {
     if (this.confirmation()) return;
     if (this.dialog()) {
@@ -879,18 +912,31 @@ export class App {
     this.dialog.set('import');
   }
 
+  protected chooseNativeBackup(): void {
+    const bridge = (window as SpendzoImportWindow).SpendzoImport;
+    if (!bridge) {
+      this.clearBackupPreview('The Android file picker is unavailable. Rebuild the Android app.');
+      return;
+    }
+    this.formError.set('');
+    bridge.chooseBackup();
+  }
+
   protected async chooseBackup(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
     try {
-      const contents = await file.text();
-      this.importContents.set(contents);
-      this.backupPreview.set(this.portability.previewBackup(contents));
-      this.formError.set('');
+      if (!file.name.toLowerCase().endsWith('.budgetbackup')) {
+        throw new Error('Choose a file ending in .budgetbackup.');
+      }
+      this.loadBackupContents(await file.text());
     } catch (error) {
-      this.backupPreview.set(null);
-      this.formError.set(error instanceof Error ? error.message : 'The backup could not be read.');
+      this.clearBackupPreview(
+        error instanceof Error ? error.message : 'The backup could not be read.',
+      );
+    } finally {
+      input.value = '';
     }
   }
 
@@ -1164,6 +1210,18 @@ export class App {
       year: 'numeric',
     }).format(end);
     return `${startLabel} \u2013 ${endLabel}`;
+  }
+
+  private loadBackupContents(contents: string): void {
+    this.importContents.set(contents);
+    this.backupPreview.set(this.portability.previewBackup(contents));
+    this.formError.set('');
+  }
+
+  private clearBackupPreview(message: string): void {
+    this.importContents.set('');
+    this.backupPreview.set(null);
+    this.formError.set(message);
   }
 
   private readSideNavCollapsed(): boolean {
