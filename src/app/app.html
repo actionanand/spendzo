@@ -734,22 +734,13 @@
                       />
                     </label>
                     <button
-                      class="icon-button danger category-delete"
+                      class="icon-button category-edit"
                       type="button"
-                      [disabled]="isOtherCategory(summary.category)"
-                      [attr.aria-label]="
-                        isOtherCategory(summary.category)
-                          ? 'Other category cannot be deleted'
-                          : 'Delete ' + summary.category.name + ' category'
-                      "
-                      [attr.title]="
-                        isOtherCategory(summary.category)
-                          ? 'Other is the fallback category and cannot be deleted'
-                          : 'Delete ' + summary.category.name
-                      "
-                      (click)="deleteCategory(summary.category)"
+                      [attr.aria-label]="'Edit ' + summary.category.name + ' category'"
+                      [attr.title]="'Edit ' + summary.category.name"
+                      (click)="openCategory(summary.category)"
                     >
-                      <svg lucideIcon="trash-2" aria-hidden="true"></svg>
+                      <svg lucideIcon="pencil" aria-hidden="true"></svg>
                     </button>
                   </article>
                 }
@@ -1212,15 +1203,23 @@
       >
         <header>
           <div>
-            <p class="eyebrow">CUSTOM CATEGORY</p>
-            <h2 id="category-dialog-title">New category</h2>
+            <p class="eyebrow">{{ editingCategoryId() ? 'EDIT CATEGORY' : 'CUSTOM CATEGORY' }}</p>
+            <h2 id="category-dialog-title">
+              {{ editingCategoryId() ? 'Edit category' : 'New category' }}
+            </h2>
           </div>
           <button class="icon-button" type="button" aria-label="Close" (click)="closeDialog()">
             <svg lucideIcon="x" aria-hidden="true"></svg>
           </button>
         </header>
         <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()">
-          <label><span>Name</span><input formControlName="name" placeholder="e.g. Pets" /></label>
+          <label
+            ><span>Name</span
+            ><input
+              formControlName="name"
+              placeholder="e.g. Pets"
+              [attr.title]="editingOtherCategory() ? 'Other is the fallback category name' : null"
+          /></label>
           <div class="form-grid">
             <app-select-picker
               label="Icon"
@@ -1239,8 +1238,29 @@
             <p class="form-error" role="alert">{{ formError() }}</p>
           }
           <footer>
+            @if (editingCategoryId()) {
+              <button
+                class="danger-button category-dialog-delete"
+                type="button"
+                [disabled]="editingOtherCategory()"
+                [attr.aria-label]="
+                  editingOtherCategory() ? 'Other category cannot be deleted' : 'Delete category'
+                "
+                [attr.title]="
+                  editingOtherCategory()
+                    ? 'Other is the fallback category and cannot be deleted'
+                    : 'Delete category'
+                "
+                (click)="deleteEditingCategory()"
+              >
+                <svg lucideIcon="trash-2" aria-hidden="true"></svg>
+                Delete
+              </button>
+            }
             <button class="secondary-button" type="button" (click)="closeDialog()">Cancel</button
-            ><button class="primary-button" type="submit">Create category</button>
+            ><button class="primary-button" type="submit">
+              {{ editingCategoryId() ? 'Save changes' : 'Create category' }}
+            </button>
           </footer>
         </form>
       </section>

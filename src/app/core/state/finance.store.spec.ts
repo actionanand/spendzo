@@ -108,6 +108,61 @@ describe('FinanceStore', () => {
     expect(store.categories().some((category) => category.id === 'other')).toBe(true);
   });
 
+  it('rejects duplicate and reserved category names', async () => {
+    const draft = {
+      name: ' groceries ',
+      lucideIconName: 'shopping-basket',
+      colour: '#2f9e6f',
+    };
+
+    await expect(store.addCategory(draft)).rejects.toThrow('already exists');
+    await expect(store.addCategory({ ...draft, name: 'Other' })).rejects.toThrow(
+      'cannot be created again',
+    );
+  });
+
+  it('updates categories while protecting existing names and the Other name', async () => {
+    const groceries = store.categories().find((category) => category.id === 'groceries');
+    expect(groceries).toBeDefined();
+    if (!groceries) return;
+
+    await store.updateCategory('groceries', {
+      name: 'Household food',
+      lucideIconName: groceries.lucideIconName,
+      colour: groceries.colour,
+      monthlyLimitMinor: 250_000,
+    });
+    expect(store.categories().find((category) => category.id === 'groceries')?.name).toBe(
+      'Household food',
+    );
+
+    await expect(
+      store.updateCategory('groceries', {
+        name: 'Dining',
+        lucideIconName: groceries.lucideIconName,
+        colour: groceries.colour,
+      }),
+    ).rejects.toThrow('already exists');
+    await store.updateCategory('other', {
+      name: 'Other',
+      lucideIconName: 'circle-help',
+      colour: '#66756e',
+      monthlyLimitMinor: 100_000,
+    });
+    const other = store.categories().find((category) => category.id === 'other');
+    expect(other?.name).toBe('Other');
+    expect(other?.lucideIconName).toBe('circle-help');
+    expect(other?.monthlyLimitMinor).toBe(100_000);
+
+    await expect(
+      store.updateCategory('other', {
+        name: 'Miscellaneous',
+        lucideIconName: 'circle-help',
+        colour: '#66756e',
+      }),
+    ).rejects.toThrow('name cannot be changed');
+  });
+
   it('persists every state transition through the repository', async () => {
     await store.addExpense({
       amountMinor: 10_000,

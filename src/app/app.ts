@@ -100,6 +100,7 @@ export class App {
   protected readonly sideNavCollapsed = signal(this.readSideNavCollapsed());
   protected readonly sideNavHintActive = signal(this.readSideNavHintActive());
   protected readonly editingExpenseId = signal<string | null>(null);
+  protected readonly editingCategoryId = signal<string | null>(null);
   protected readonly confirmation = signal<ConfirmationRequest | null>(null);
   protected readonly exportFormat = signal<ExpenseExportFormat>('PDF');
   protected readonly exportRange = signal<ExpenseExportRange>('CYCLE');
@@ -679,12 +680,19 @@ export class App {
     this.showMessage('Budget updated.');
   }
 
-  protected openCategory(): void {
+  protected openCategory(category?: ExpenseCategory): void {
+    this.editingCategoryId.set(category?.id ?? null);
+    if (category && this.isOtherCategory(category)) {
+      this.categoryForm.controls.name.disable({ emitEvent: false });
+    } else {
+      this.categoryForm.controls.name.enable({ emitEvent: false });
+    }
     this.categoryForm.reset({
-      name: '',
-      lucideIconName: 'circle-dollar-sign',
-      colour: '#2f9e6f',
-      monthlyLimit: '',
+      name: category?.name ?? '',
+      lucideIconName: category?.lucideIconName ?? 'circle-dollar-sign',
+      colour: category?.colour ?? '#2f9e6f',
+      monthlyLimit:
+        category?.monthlyLimitMinor === undefined ? '' : String(category.monthlyLimitMinor / 100),
     });
     this.formError.set('');
     this.dialog.set('category');
@@ -692,6 +700,10 @@ export class App {
 
   protected async saveCategory(): Promise<void> {
     const value = this.categoryForm.getRawValue();
+    const name = value.name.trim();
+    const editingId = this.editingCategoryId();
+    const editingCategory = this.store.categories().find((category) => category.id === editingId);
+    const editingOther = Boolean(editingCategory && this.isOtherCategory(editingCategory));
     const limit = value.monthlyLimit ? rupeesToMinor(value.monthlyLimit) : undefined;
     if (
       this.categoryForm.invalid ||
@@ -700,14 +712,38 @@ export class App {
       this.formError.set('Enter a category name and a valid limit.');
       return;
     }
-    await this.store.addCategory({
-      name: value.name.trim(),
+    if (name.toLocaleLowerCase('en-IN') === 'other' && !editingOther) {
+      this.formError.set('Other is a built-in fallback category and cannot be created again.');
+      return;
+    }
+    const duplicate = this.store
+      .categories()
+      .some(
+        (category) =>
+          category.id !== editingId &&
+          category.name.trim().toLocaleLowerCase('en-IN') === name.toLocaleLowerCase('en-IN'),
+      );
+    if (duplicate && !editingOther) {
+      this.formError.set(`A category named "${name}" already exists.`);
+      return;
+    }
+
+    const draft = {
+      name,
       lucideIconName: value.lucideIconName,
       colour: value.colour,
       monthlyLimitMinor: limit,
-    });
-    this.closeDialog(true);
-    this.showMessage('Category created.');
+    };
+    try {
+      if (editingId) await this.store.updateCategory(editingId, draft);
+      else await this.store.addCategory(draft);
+      this.closeDialog(true);
+      this.showMessage(editingId ? 'Category updated.' : 'Category created.');
+    } catch (error) {
+      this.formError.set(
+        error instanceof Error ? error.message : 'The category could not be saved.',
+      );
+    }
   }
 
   protected async changeTheme(theme: ThemePreference): Promise<void> {
@@ -747,18 +783,30 @@ export class App {
     return category.id === 'other' || category.name.trim().toLowerCase() === 'other';
   }
 
+  protected editingOtherCategory(): boolean {
+    const editingId = this.editingCategoryId();
+    const category = this.store.categories().find((item) => item.id === editingId);
+    return Boolean(category && this.isOtherCategory(category));
+  }
+
+  protected deleteEditingCategory(): void {
+    const editingId = this.editingCategoryId();
+    const category = this.store.categories().find((item) => item.id === editingId);
+    if (category) this.deleteCategory(category);
+  }
+
   protected deleteCategory(category: ExpenseCategory): void {
     if (this.isOtherCategory(category)) return;
     const transactionCount = this.store
       .expenses()
       .filter((expense) => expense.categoryId === category.id).length;
     const transactionMessage = transactionCount
-      ? ` ${transactionCount} ${transactionCount === 1 ? 'transaction' : 'transactions'} will be moved to Other.`
-      : '';
+      ? `${transactionCount} ${transactionCount === 1 ? 'transaction' : 'transactions'} will be moved to Other.`
+      : 'Any transactions assigned to it will be moved to Other.';
 
     this.requestConfirmation({
       title: `Delete ${category.name}?`,
-      message: `This category and its monthly limit will be removed.${transactionMessage}`,
+      message: `This category and its monthly limit will be removed. ${transactionMessage}`,
       confirmLabel: 'Delete category',
       tone: 'danger',
       action: async () => {
@@ -768,6 +816,7 @@ export class App {
           const otherCategory = this.store.categories().find((item) => this.isOtherCategory(item));
           this.expenseForm.controls.categoryId.setValue(otherCategory?.id ?? 'other');
         }
+        this.closeDialog(true);
         this.showMessage(`${category.name} deleted.`);
       },
     });
@@ -1015,6 +1064,7 @@ export class App {
 
   protected closeDialog(force = false): void {
     if (!force && !this.canDeactivate(() => this.closeDialog(true))) return;
+    if (this.dialog() === 'category') this.editingCategoryId.set(null);
     this.dialog.set(null);
     this.formError.set('');
   }
