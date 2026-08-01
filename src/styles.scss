@@ -1250,6 +1250,17 @@ svg[lucideIcon] {
   font-size: 0.75rem;
 }
 
+.category-dialog-delete {
+  margin-right: auto;
+}
+
+.category-dialog-delete:disabled,
+.category-dialog-delete:disabled:hover {
+  border-color: var(--border);
+  color: var(--muted);
+  background: var(--surface-muted);
+}
+
 .currency-prefix {
   position: absolute;
   z-index: 1;

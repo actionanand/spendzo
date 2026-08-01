@@ -107,6 +107,29 @@ export const FinanceStore = signalStore(
     };
   }),
   withMethods((store, repository = inject(PlatformFinanceRepository)) => {
+    function normalizedCategoryName(name: string): string {
+      return name.trim().toLocaleLowerCase('en-IN');
+    }
+
+    function validateCategoryName(name: string, editingId?: string): string {
+      const normalizedName = normalizedCategoryName(name);
+      if (!normalizedName) throw new Error('Enter a category name.');
+      if (normalizedName === 'other') {
+        throw new Error('Other is a built-in fallback category and cannot be created again.');
+      }
+      if (
+        store
+          .categories()
+          .some(
+            (category) =>
+              category.id !== editingId && normalizedCategoryName(category.name) === normalizedName,
+          )
+      ) {
+        throw new Error(`A category named "${name.trim()}" already exists.`);
+      }
+      return name.trim();
+    }
+
     async function persist(): Promise<void> {
       await repository.save({
         schemaVersion: 1,
@@ -196,6 +219,7 @@ export const FinanceStore = signalStore(
         const now = new Date().toISOString();
         const category: ExpenseCategory = {
           ...draft,
+          name: validateCategoryName(draft.name),
           id: crypto.randomUUID(),
           warningThresholdPercentage: store.settings().warningThresholdPercentage,
           active: true,
@@ -207,12 +231,55 @@ export const FinanceStore = signalStore(
         patchState(store, (state) => ({ categories: [...state.categories, category] }));
         await persist();
       },
+      async updateCategory(id: string, draft: CategoryDraft): Promise<void> {
+        const category = store.categories().find((item) => item.id === id);
+        if (!category) throw new Error('The category no longer exists.');
+        const isOther =
+          category.id === 'other' || normalizedCategoryName(category.name) === 'other';
+        if (isOther && normalizedCategoryName(draft.name) !== 'other') {
+          throw new Error('The Other category name cannot be changed.');
+        }
+        const name = isOther ? category.name : validateCategoryName(draft.name, id);
+        patchState(store, (state) => ({
+          categories: state.categories.map((item) =>
+            item.id === id
+              ? { ...item, ...draft, name, updatedAt: new Date().toISOString() }
+              : item,
+          ),
+        }));
+        await persist();
+      },
       async updateCategoryLimit(id: string, monthlyLimitMinor?: number): Promise<void> {
+        const category = store.categories().find((item) => item.id === id);
+        if (!category) return;
         patchState(store, (state) => ({
           categories: state.categories.map((category) =>
             category.id === id
               ? { ...category, monthlyLimitMinor, updatedAt: new Date().toISOString() }
               : category,
+          ),
+        }));
+        await persist();
+      },
+      async deleteCategory(id: string): Promise<void> {
+        const categories = store.categories();
+        const category = categories.find((item) => item.id === id);
+        const otherCategory =
+          categories.find((item) => item.id === 'other') ??
+          categories.find((item) => item.name.trim().toLowerCase() === 'other');
+        if (
+          !category ||
+          !otherCategory ||
+          category.id === otherCategory.id ||
+          category.name.trim().toLowerCase() === 'other'
+        ) {
+          return;
+        }
+
+        patchState(store, (state) => ({
+          categories: state.categories.filter((item) => item.id !== id),
+          expenses: state.expenses.map((expense) =>
+            expense.categoryId === id ? { ...expense, categoryId: otherCategory.id } : expense,
           ),
         }));
         await persist();

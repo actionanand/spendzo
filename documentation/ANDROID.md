@@ -52,6 +52,9 @@ Run `npm run android:patch` again after every `npx cap sync android`.
 `.github/workflows/android-build.yml` runs lint, the Angular production build, Capacitor
 synchronisation, native patching, Java setup, and a release Gradle build.
 
+R8 release optimization, Play Console's deobfuscation warning, and mapping-file handling are
+documented separately in [Android R8 and deobfuscation files](R8-DEOBFUSCATION.md).
+
 - Node.js is read from the root `.nvmrc` file so local WSL2 and CI use the same version.
 - GitHub Actions use Node 24-based action releases; no insecure Node 20 override is enabled.
 - Java/Gradle caching is initialized only after Capacitor creates the generated `android/` project.
