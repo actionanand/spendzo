@@ -217,6 +217,29 @@ export const FinanceStore = signalStore(
         }));
         await persist();
       },
+      async deleteCategory(id: string): Promise<void> {
+        const categories = store.categories();
+        const category = categories.find((item) => item.id === id);
+        const otherCategory =
+          categories.find((item) => item.id === 'other') ??
+          categories.find((item) => item.name.trim().toLowerCase() === 'other');
+        if (
+          !category ||
+          !otherCategory ||
+          category.id === otherCategory.id ||
+          category.name.trim().toLowerCase() === 'other'
+        ) {
+          return;
+        }
+
+        patchState(store, (state) => ({
+          categories: state.categories.filter((item) => item.id !== id),
+          expenses: state.expenses.map((expense) =>
+            expense.categoryId === id ? { ...expense, categoryId: otherCategory.id } : expense,
+          ),
+        }));
+        await persist();
+      },
       async updateSettings(settings: Partial<AppSettings>): Promise<void> {
         patchState(store, (state) => ({ settings: { ...state.settings, ...settings } }));
         if (

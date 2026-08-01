@@ -733,6 +733,24 @@
                         (change)="changeCategoryLimit(summary.category.id, $event)"
                       />
                     </label>
+                    <button
+                      class="icon-button danger category-delete"
+                      type="button"
+                      [disabled]="isOtherCategory(summary.category)"
+                      [attr.aria-label]="
+                        isOtherCategory(summary.category)
+                          ? 'Other category cannot be deleted'
+                          : 'Delete ' + summary.category.name + ' category'
+                      "
+                      [attr.title]="
+                        isOtherCategory(summary.category)
+                          ? 'Other is the fallback category and cannot be deleted'
+                          : 'Delete ' + summary.category.name
+                      "
+                      (click)="deleteCategory(summary.category)"
+                    >
+                      <svg lucideIcon="trash-2" aria-hidden="true"></svg>
+                    </button>
                   </article>
                 }
               </div>

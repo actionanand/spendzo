@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Capacitor } from '@capacitor/core';
 import { LucideDynamicIcon } from '@lucide/angular';
 import { ExpenseExportFormat, ExpenseExportRange } from './core/models/export.models';
-import { Expense, ThemePreference } from './core/models/finance.models';
+import { Expense, ExpenseCategory, ThemePreference } from './core/models/finance.models';
 import { BackupPreview, DataPortabilityService } from './core/services/data-portability.service';
 import { ExpenseExportService } from './core/services/expense-export.service';
 import { SecurityService } from './core/services/security.service';
@@ -741,6 +741,36 @@ export class App {
     if (amount !== undefined && (!Number.isFinite(amount) || amount < 0)) return;
     await this.store.updateCategoryLimit(categoryId, amount);
     this.showMessage('Category limit updated.');
+  }
+
+  protected isOtherCategory(category: ExpenseCategory): boolean {
+    return category.id === 'other' || category.name.trim().toLowerCase() === 'other';
+  }
+
+  protected deleteCategory(category: ExpenseCategory): void {
+    if (this.isOtherCategory(category)) return;
+    const transactionCount = this.store
+      .expenses()
+      .filter((expense) => expense.categoryId === category.id).length;
+    const transactionMessage = transactionCount
+      ? ` ${transactionCount} ${transactionCount === 1 ? 'transaction' : 'transactions'} will be moved to Other.`
+      : '';
+
+    this.requestConfirmation({
+      title: `Delete ${category.name}?`,
+      message: `This category and its monthly limit will be removed.${transactionMessage}`,
+      confirmLabel: 'Delete category',
+      tone: 'danger',
+      action: async () => {
+        await this.store.deleteCategory(category.id);
+        if (this.categoryFilter() === category.id) this.categoryFilter.set('');
+        if (this.expenseForm.controls.categoryId.value === category.id) {
+          const otherCategory = this.store.categories().find((item) => this.isOtherCategory(item));
+          this.expenseForm.controls.categoryId.setValue(otherCategory?.id ?? 'other');
+        }
+        this.showMessage(`${category.name} deleted.`);
+      },
+    });
   }
 
   protected openPin(): void {

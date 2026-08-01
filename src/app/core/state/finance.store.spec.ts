@@ -84,6 +84,30 @@ describe('FinanceStore', () => {
     expect(groceries?.usedPercentage).toBe(72.5);
   });
 
+  it('deletes categories and moves their expenses to Other', async () => {
+    await store.addExpense({
+      amountMinor: 25_000,
+      categoryId: 'groceries',
+      transactionDate: localDateKey(),
+      tags: [],
+    });
+
+    await store.deleteCategory('groceries');
+
+    expect(store.categories().some((category) => category.id === 'groceries')).toBe(false);
+    expect(store.expenses()[0]?.categoryId).toBe('other');
+    expect(repository.snapshot?.expenses[0]?.categoryId).toBe('other');
+  });
+
+  it('does not delete the Other category', async () => {
+    const categoryCount = store.categories().length;
+
+    await store.deleteCategory('other');
+
+    expect(store.categories()).toHaveLength(categoryCount);
+    expect(store.categories().some((category) => category.id === 'other')).toBe(true);
+  });
+
   it('persists every state transition through the repository', async () => {
     await store.addExpense({
       amountMinor: 10_000,
