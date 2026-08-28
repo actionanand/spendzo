@@ -12,12 +12,20 @@ import { SnackbarService } from './core/services/snackbar.service';
 import { ThemeService } from './core/services/theme.service';
 import { FinanceStore } from './core/state/finance.store';
 import {
+  COUNTRY_CURRENCY_OPTIONS,
+  DISPLAY_CURRENCY_CODES,
+  countryForCurrency,
+  countryOption,
+  currencyLabel,
+  currencySymbol as resolveCurrencySymbol,
+} from './core/utils/currency-display';
+import {
   calculateCycleBounds,
   daysInclusive,
   localDateKey,
   parseLocalDate,
 } from './core/utils/date-cycle';
-import { formatInr, percentage, rupeesToMinor } from './core/utils/money';
+import { formatMoney as formatDisplayMoney, percentage, rupeesToMinor } from './core/utils/money';
 import { AppSelectOption, AppSelectPicker } from './shared/app-select-picker';
 import { ConfirmationDialog } from './shared/confirmation-dialog';
 import { ReportChart } from './shared/report-chart';
@@ -284,6 +292,28 @@ export class App {
       ),
   );
 
+  protected readonly displayCountryCode = computed(() => this.store.settings().defaultCountryCode);
+  protected readonly displayCurrencyCode = computed(
+    () => this.store.settings().defaultCurrencyCode,
+  );
+  protected readonly displayCurrencySymbol = computed(() =>
+    resolveCurrencySymbol(this.displayCurrencyCode(), this.displayCountryCode()),
+  );
+  protected readonly countryOptions: readonly AppSelectOption[] = COUNTRY_CURRENCY_OPTIONS.map(
+    (option) => ({
+      value: option.countryCode,
+      label: option.countryName,
+      detail: `${currencyLabel(option.currencyCode)} · ${option.currencyCode}`,
+    }),
+  );
+  protected readonly currencyOptions = computed<readonly AppSelectOption[]>(() =>
+    DISPLAY_CURRENCY_CODES.map((currencyCode) => ({
+      value: currencyCode,
+      label: `${currencyLabel(currencyCode)} — ${currencyCode}`,
+      detail: `Display symbol: ${resolveCurrencySymbol(currencyCode, this.displayCountryCode())}`,
+    })),
+  );
+
   protected readonly categoryPickerOptions = computed<readonly AppSelectOption[]>(() =>
     this.store
       .categories()
@@ -292,7 +322,7 @@ export class App {
         value: category.id,
         label: category.name,
         detail: category.monthlyLimitMinor
-          ? `${formatInr(category.monthlyLimitMinor)} monthly limit`
+          ? `${this.formatMoney(category.monthlyLimitMinor)} monthly limit`
           : 'No spending limit',
         icon: category.lucideIconName,
         colour: category.colour,
@@ -412,9 +442,9 @@ export class App {
 
   protected readonly cashFlowChartLabel = computed(
     () =>
-      `Income ${formatInr(this.statisticsIncomeMinor())}, expenses ${formatInr(
+      `Income ${this.formatMoney(this.statisticsIncomeMinor())}, expenses ${this.formatMoney(
         this.statisticsExpenseMinor(),
-      )}, savings ${formatInr(
+      )}, savings ${this.formatMoney(
         Math.max(this.statisticsIncomeMinor() - this.statisticsExpenseMinor(), 0),
       )}.`,
   );
@@ -434,7 +464,7 @@ export class App {
   protected readonly categoryChartLabel = computed(() =>
     this.categoryChartData().length
       ? `Spending by category. ${this.categoryChartData()
-          .map((item) => `${item.label} ${formatInr(Math.round(item.value * 100))}`)
+          .map((item) => `${item.label} ${this.formatMoney(Math.round(item.value * 100))}`)
           .join(', ')}.`
       : 'No category spending for this period.',
   );
@@ -492,7 +522,12 @@ export class App {
   }
 
   protected formatMoney(amountMinor: number, showPaise = false): string {
-    return formatInr(amountMinor, showPaise);
+    return formatDisplayMoney(
+      amountMinor,
+      this.displayCurrencyCode(),
+      this.displayCountryCode(),
+      showPaise,
+    );
   }
 
   protected percent(value: number, total: number): number {
@@ -748,6 +783,26 @@ export class App {
 
   protected async changeTheme(theme: ThemePreference): Promise<void> {
     await this.store.updateSettings({ theme });
+  }
+
+  protected async changeDisplayCountry(countryCode: string): Promise<void> {
+    const option = countryOption(countryCode);
+    if (!option) return;
+    await this.store.updateSettings({
+      defaultCountryCode: option.countryCode,
+      defaultCurrencyCode: option.currencyCode,
+    });
+    this.showMessage('Country and display currency updated.');
+  }
+
+  protected async changeDisplayCurrency(currencyCode: string): Promise<void> {
+    const option = countryForCurrency(currencyCode, this.displayCountryCode());
+    if (!option) return;
+    await this.store.updateSettings({
+      defaultCountryCode: option.countryCode,
+      defaultCurrencyCode: option.currencyCode,
+    });
+    this.showMessage('Country and display currency updated.');
   }
 
   protected async changeCycleStart(raw: string): Promise<void> {
@@ -1048,6 +1103,13 @@ export class App {
       const policy = this.duplicatePolicy();
       await this.store.replaceSnapshot({
         ...current,
+        settings: preview.hasDisplayPreferences
+          ? {
+              ...current.settings,
+              defaultCountryCode: preview.snapshot.settings.defaultCountryCode,
+              defaultCurrencyCode: preview.snapshot.settings.defaultCurrencyCode,
+            }
+          : current.settings,
         expenses: this.mergeRecords(current.expenses, preview.snapshot.expenses, policy),
         incomes: this.mergeRecords(current.incomes, preview.snapshot.incomes, policy),
         categories: this.mergeRecords(current.categories, preview.snapshot.categories, policy),
@@ -1123,6 +1185,8 @@ export class App {
       this.store.categories(),
       range.label,
       range.fileSuffix,
+      this.displayCurrencyCode(),
+      this.displayCountryCode(),
     );
     this.closeDialog(true);
   }

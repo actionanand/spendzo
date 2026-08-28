@@ -206,6 +206,7 @@ const backup = {
   incomes,
   budgetCycles,
   settings: {
+    defaultCountryCode: 'IN',
     defaultCurrencyCode: 'INR',
     budgetCycleStartDay: 1,
     theme: 'system',

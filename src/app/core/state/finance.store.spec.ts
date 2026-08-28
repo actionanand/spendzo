@@ -173,4 +173,20 @@ describe('FinanceStore', () => {
 
     expect(repository.snapshot?.expenses).toHaveLength(1);
   });
+
+  it('persists country and display currency without changing stored amounts', async () => {
+    await store.addExpense({
+      amountMinor: 12_550,
+      categoryId: 'transport',
+      transactionDate: localDateKey(),
+      tags: [],
+    });
+    await store.updateSettings({ defaultCountryCode: 'US', defaultCurrencyCode: 'USD' });
+
+    expect(store.settings().defaultCountryCode).toBe('US');
+    expect(store.settings().defaultCurrencyCode).toBe('USD');
+    expect(store.expenses()[0]?.amountMinor).toBe(12_550);
+    expect(repository.snapshot?.settings.defaultCurrencyCode).toBe('USD');
+    expect(repository.snapshot?.expenses[0]?.amountMinor).toBe(12_550);
+  });
 });

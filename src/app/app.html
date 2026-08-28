@@ -517,6 +517,8 @@
                 [colours]="cashFlowChartColours"
                 [accessibleLabel]="cashFlowChartLabel()"
                 [theme]="store.settings().theme"
+                [currencyCode]="displayCurrencyCode()"
+                [countryCode]="displayCountryCode()"
               />
               <dl class="chart-summary">
                 <div>
@@ -557,6 +559,8 @@
                   [colours]="categoryChartColours()"
                   [accessibleLabel]="categoryChartLabel()"
                   [theme]="store.settings().theme"
+                  [currencyCode]="displayCurrencyCode()"
+                  [countryCode]="displayCountryCode()"
                 />
                 <dl class="chart-summary category-summary">
                   @for (item of categoryChartData(); track item.label) {
@@ -595,6 +599,8 @@
                 [colours]="spendingTrendColours"
                 [accessibleLabel]="spendingTrendLabel()"
                 [theme]="store.settings().theme"
+                [currencyCode]="displayCurrencyCode()"
+                [countryCode]="displayCountryCode()"
               />
               <table class="visually-hidden">
                 <caption>
@@ -723,9 +729,10 @@
                     </div>
                     <label>
                       <span class="visually-hidden"
-                        >{{ summary.category.name }} monthly limit in rupees</span
+                        >{{ summary.category.name }} monthly limit in
+                        {{ displayCurrencyCode() }}</span
                       >
-                      <span class="currency-prefix">₹</span>
+                      <span class="currency-prefix">{{ displayCurrencySymbol() }}</span>
                       <input
                         inputmode="decimal"
                         [value]="summary.limitMinor ? summary.limitMinor / 100 : ''"
@@ -807,6 +814,48 @@
                   <span><strong>Automatic</strong><small>Follow your device</small></span>
                   <svg lucideIcon="circle-check" class="check" aria-hidden="true"></svg>
                 </button>
+              </div>
+            </section>
+
+            <section class="settings-section" aria-labelledby="currency-settings-title">
+              <header>
+                <span><svg lucideIcon="badge-indian-rupee" aria-hidden="true"></svg></span>
+                <div>
+                  <h2 id="currency-settings-title">Country & currency</h2>
+                  <p>Choose how amounts appear throughout Spendzo.</p>
+                </div>
+              </header>
+              <div class="setting-rows">
+                <div class="select-setting">
+                  <span>
+                    <strong>Country or region</strong>
+                    <small>Selects the usual currency and local number grouping</small>
+                  </span>
+                  <app-select-picker
+                    label="Country or region"
+                    sheetTitle="Choose country or region"
+                    [options]="countryOptions"
+                    [value]="displayCountryCode()"
+                    [searchable]="true"
+                    searchPlaceholder="Search country or currency"
+                    (valueChange)="changeDisplayCountry($event)"
+                  />
+                </div>
+                <div class="select-setting">
+                  <span>
+                    <strong>Display currency</strong>
+                    <small>Selects a matching country automatically</small>
+                  </span>
+                  <app-select-picker
+                    label="Display currency"
+                    sheetTitle="Choose display currency"
+                    [options]="currencyOptions()"
+                    [value]="displayCurrencyCode()"
+                    [searchable]="true"
+                    searchPlaceholder="Search currency name or code"
+                    (valueChange)="changeDisplayCurrency($event)"
+                  />
+                </div>
               </div>
             </section>
 
@@ -1061,9 +1110,9 @@
         </header>
         <form [formGroup]="expenseForm" (ngSubmit)="saveExpense()">
           <label class="amount-field">
-            <span>Amount in Rupees</span>
+            <span>Amount in {{ displayCurrencyCode() }}</span>
             <span class="amount-input"
-              ><strong>₹</strong
+              ><strong>{{ displayCurrencySymbol() }}</strong
               ><input formControlName="amount" inputmode="decimal" placeholder="0.00"
             /></span>
           </label>
@@ -1125,9 +1174,9 @@
         <form [formGroup]="incomeForm" (ngSubmit)="saveIncome()">
           <label><span>Source name</span><input formControlName="sourceName" /></label>
           <label class="amount-field"
-            ><span>Amount in Rupees</span
+            ><span>Amount in {{ displayCurrencyCode() }}</span
             ><span class="amount-input"
-              ><strong>₹</strong
+              ><strong>{{ displayCurrencySymbol() }}</strong
               ><input formControlName="amount" inputmode="decimal" placeholder="0.00" /></span
           ></label>
           <label><span>Date</span><input type="date" formControlName="incomeDate" /></label>
@@ -1169,7 +1218,7 @@
         </p>
         <form [formGroup]="budgetForm" (ngSubmit)="saveBudget()">
           <label
-            ><span>Total budget in Rupees</span
+            ><span>Total budget in {{ displayCurrencyCode() }}</span
             ><input formControlName="totalBudget" inputmode="decimal" placeholder="e.g. 50000"
           /></label>
           <label

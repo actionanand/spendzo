@@ -56,7 +56,8 @@ export interface BudgetCycle {
 }
 
 export interface AppSettings {
-  readonly defaultCurrencyCode: 'INR';
+  readonly defaultCountryCode: string;
+  readonly defaultCurrencyCode: string;
   readonly budgetCycleStartDay: number;
   readonly theme: ThemePreference;
   readonly pinEnabled: boolean;
@@ -106,6 +107,7 @@ export interface CategoryDraft {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  defaultCountryCode: 'IN',
   defaultCurrencyCode: 'INR',
   budgetCycleStartDay: 1,
   theme: 'system',
