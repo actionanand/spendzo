@@ -792,7 +792,7 @@ export class App {
       defaultCountryCode: option.countryCode,
       defaultCurrencyCode: option.currencyCode,
     });
-    this.showMessage('Country and display currency updated. Stored amounts remain INR.');
+    this.showMessage('Country and display currency updated.');
   }
 
   protected async changeDisplayCurrency(currencyCode: string): Promise<void> {
@@ -802,7 +802,7 @@ export class App {
       defaultCountryCode: option.countryCode,
       defaultCurrencyCode: option.currencyCode,
     });
-    this.showMessage('Country and display currency updated. Stored amounts remain INR.');
+    this.showMessage('Country and display currency updated.');
   }
 
   protected async changeCycleStart(raw: string): Promise<void> {
