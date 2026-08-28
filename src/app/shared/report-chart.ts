@@ -87,6 +87,8 @@ export class ReportChart {
   readonly datasetLabels = input<readonly string[]>([]);
   readonly accessibleLabel = input.required<string>();
   readonly theme = input.required<ThemePreference>();
+  readonly currencyCode = input('INR');
+  readonly countryCode = input('IN');
 
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('chartCanvas');
   private readonly ready = signal(false);
@@ -104,6 +106,8 @@ export class ReportChart {
         secondaryValues: [...this.secondaryValues()],
         datasetLabels: [...this.datasetLabels()],
         theme: this.theme(),
+        currencyCode: this.currencyCode(),
+        countryCode: this.countryCode(),
       };
       if (this.ready()) this.render(snapshot);
     });
@@ -117,6 +121,8 @@ export class ReportChart {
     secondaryValues: number[];
     datasetLabels: string[];
     theme: ThemePreference;
+    currencyCode: string;
+    countryCode: string;
   }): void {
     this.chart?.destroy();
     const canvas = this.canvas().nativeElement;
@@ -275,19 +281,32 @@ export class ReportChart {
     ` ${this.currency(Number(context.raw))}`;
 
   private currency(value: number): string {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(value);
+    return this.numberFormatter(false).format(value);
   }
 
   private compactCurrency(value: number): string {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    }).format(value);
+    return this.numberFormatter(true).format(value);
+  }
+
+  private numberFormatter(compact: boolean): Intl.NumberFormat {
+    try {
+      return new Intl.NumberFormat(
+        this.countryCode() === 'IN' ? 'en-IN' : `en-${this.countryCode()}`,
+        {
+          style: 'currency',
+          currency: this.currencyCode(),
+          currencyDisplay: 'narrowSymbol',
+          notation: compact ? 'compact' : 'standard',
+          maximumFractionDigits: compact ? 1 : 0,
+        },
+      );
+    } catch {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        notation: compact ? 'compact' : 'standard',
+        maximumFractionDigits: compact ? 1 : 0,
+      });
+    }
   }
 }

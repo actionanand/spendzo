@@ -1,7 +1,7 @@
 import { Service, inject } from '@angular/core';
 import { ExpenseCategory, Expense } from '../models/finance.models';
 import { ExpenseExportFormat, ExportDocument } from '../models/export.models';
-import { formatInr } from '../utils/money';
+import { formatMoney } from '../utils/money';
 import { SnackbarService } from './snackbar.service';
 
 interface SpendzoExportBridge {
@@ -23,6 +23,8 @@ export class ExpenseExportService {
     categories: readonly ExpenseCategory[],
     label: string,
     fileSuffix: string,
+    currencyCode: string,
+    countryCode: string,
   ): void {
     const ordered = [...expenses].sort((left, right) =>
       right.transactionDate.localeCompare(left.transactionDate),
@@ -30,7 +32,7 @@ export class ExpenseExportService {
     const filename = `spendzo-expenses-${fileSuffix}`;
     if (format === 'CSV') {
       this.deliverCsv(
-        this.expensesCsv(ordered, categories),
+        this.expensesCsv(ordered, categories, currencyCode),
         `${filename}.csv`,
         `Spendzo expenses — ${label}`,
       );
@@ -53,10 +55,18 @@ export class ExpenseExportService {
       }),
       summary: [
         { label: 'Expenses', value: String(ordered.length) },
-        { label: 'Total spent', value: formatInr(totalMinor, true) },
+        {
+          label: 'Total spent',
+          value: formatMoney(totalMinor, currencyCode, countryCode, true),
+        },
         {
           label: 'Average expense',
-          value: formatInr(ordered.length ? Math.round(totalMinor / ordered.length) : 0, true),
+          value: formatMoney(
+            ordered.length ? Math.round(totalMinor / ordered.length) : 0,
+            currencyCode,
+            countryCode,
+            true,
+          ),
         },
         {
           label: 'Top category',
@@ -74,7 +84,7 @@ export class ExpenseExportService {
               expense.transactionDate,
               expense.title ?? 'Untitled expense',
               categoryNames.get(expense.categoryId) ?? 'Other',
-              formatInr(expense.amountMinor, true),
+              formatMoney(expense.amountMinor, currencyCode, countryCode, true),
               expense.paymentMethod ?? '—',
               expense.notes ?? '—',
             ],
@@ -88,7 +98,7 @@ export class ExpenseExportService {
             .map(([category, amount]) => ({
               cells: [
                 category,
-                formatInr(amount, true),
+                formatMoney(amount, currencyCode, countryCode, true),
                 `${totalMinor ? Math.round((amount / totalMinor) * 1000) / 10 : 0}%`,
               ],
             })),
@@ -101,10 +111,11 @@ export class ExpenseExportService {
   private expensesCsv(
     expenses: readonly Expense[],
     categories: readonly ExpenseCategory[],
+    currencyCode: string,
   ): string {
     const categoryNames = new Map(categories.map((category) => [category.id, category.name]));
     const rows = [
-      ['Date', 'Title', 'Category', 'Amount (INR)', 'Payment method', 'Notes', 'Tags'],
+      ['Date', 'Title', 'Category', `Amount (${currencyCode})`, 'Payment method', 'Notes', 'Tags'],
       ...expenses.map((expense) => [
         expense.transactionDate,
         expense.title ?? '',

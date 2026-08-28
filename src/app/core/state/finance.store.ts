@@ -4,6 +4,7 @@ import {
   AppSettings,
   CategoryDraft,
   createDefaultCategories,
+  DEFAULT_SETTINGS,
   Expense,
   ExpenseCategory,
   ExpenseDraft,
@@ -13,6 +14,7 @@ import {
 } from '../models/finance.models';
 import { PlatformFinanceRepository } from '../repositories/finance.repository';
 import { containsDate, createCurrentCycle, daysInclusive, localDateKey } from '../utils/date-cycle';
+import { normalizeAppSettings } from '../utils/currency-display';
 import { percentage } from '../utils/money';
 
 interface FinanceState extends FinanceSnapshot {
@@ -29,15 +31,7 @@ const initialState: FinanceState = {
   incomes: [],
   budgetCycles: [initialCycle],
   settings: {
-    defaultCurrencyCode: 'INR',
-    budgetCycleStartDay: 1,
-    theme: 'system',
-    pinEnabled: false,
-    biometricEnabled: false,
-    autoLockMinutes: 5,
-    lockInBackground: true,
-    warningThresholdPercentage: 80,
-    copyPreviousBudget: false,
+    ...DEFAULT_SETTINGS,
   },
   initialized: false,
   error: '',
@@ -145,7 +139,9 @@ export const FinanceStore = signalStore(
       async initialize(): Promise<void> {
         try {
           const saved = await repository.load();
-          if (saved) patchState(store, saved);
+          if (saved) {
+            patchState(store, { ...saved, settings: normalizeAppSettings(saved.settings) });
+          }
           patchState(store, { initialized: true, error: '' });
         } catch {
           patchState(store, {
@@ -285,7 +281,9 @@ export const FinanceStore = signalStore(
         await persist();
       },
       async updateSettings(settings: Partial<AppSettings>): Promise<void> {
-        patchState(store, (state) => ({ settings: { ...state.settings, ...settings } }));
+        patchState(store, (state) => ({
+          settings: normalizeAppSettings({ ...state.settings, ...settings }),
+        }));
         if (
           settings.budgetCycleStartDay &&
           settings.budgetCycleStartDay !== store.activeCycle().startDay
@@ -299,7 +297,7 @@ export const FinanceStore = signalStore(
         await persist();
       },
       async replaceSnapshot(snapshot: FinanceSnapshot): Promise<void> {
-        patchState(store, snapshot);
+        patchState(store, { ...snapshot, settings: normalizeAppSettings(snapshot.settings) });
         await persist();
       },
       snapshot(): FinanceSnapshot {

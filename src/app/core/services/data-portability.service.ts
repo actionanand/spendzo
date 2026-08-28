@@ -1,6 +1,7 @@
 import { Service } from '@angular/core';
 import { FinanceSnapshot } from '../models/finance.models';
-import { formatInr } from '../utils/money';
+import { normalizeAppSettings } from '../utils/currency-display';
+import { formatMoney } from '../utils/money';
 
 interface SpendzoExportBridge {
   exportBackup(content: string, filename: string, title: string): void;
@@ -14,6 +15,7 @@ export type BackupExportDelivery = 'native' | 'browser';
 
 export interface BackupPreview {
   readonly snapshot: FinanceSnapshot;
+  readonly hasDisplayPreferences: boolean;
   readonly expenseCount: number;
   readonly incomeCount: number;
   readonly categoryCount: number;
@@ -61,9 +63,16 @@ export class DataPortabilityService {
     ) {
       throw new Error('This file is not a valid Spendzo backup or uses an unsupported version.');
     }
-    const snapshot = parsed as FinanceSnapshot;
+    const parsedSettings = parsed.settings as Partial<FinanceSnapshot['settings']>;
+    const snapshot: FinanceSnapshot = {
+      ...(parsed as FinanceSnapshot),
+      settings: normalizeAppSettings(parsedSettings),
+    };
     return {
       snapshot,
+      hasDisplayPreferences:
+        typeof parsedSettings.defaultCountryCode === 'string' &&
+        typeof parsedSettings.defaultCurrencyCode === 'string',
       expenseCount: snapshot.expenses.length,
       incomeCount: snapshot.incomes.length,
       categoryCount: snapshot.categories.length,
@@ -76,12 +85,25 @@ export class DataPortabilityService {
       snapshot.categories.map((category) => [category.id, category.name]),
     );
     const rows = [
-      ['Date', 'Title', 'Category', 'Amount', 'Payment method', 'Notes', 'Tags'],
+      [
+        'Date',
+        'Title',
+        'Category',
+        `Amount (${snapshot.settings.defaultCurrencyCode})`,
+        'Payment method',
+        'Notes',
+        'Tags',
+      ],
       ...snapshot.expenses.map((expense) => [
         expense.transactionDate,
         expense.title ?? '',
         categoryNames.get(expense.categoryId) ?? 'Unknown',
-        formatInr(expense.amountMinor, true),
+        formatMoney(
+          expense.amountMinor,
+          snapshot.settings.defaultCurrencyCode,
+          snapshot.settings.defaultCountryCode,
+          true,
+        ),
         expense.paymentMethod ?? '',
         expense.notes ?? '',
         expense.tags.join('; '),

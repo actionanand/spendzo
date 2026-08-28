@@ -64,47 +64,67 @@ export interface AppSelectOption {
       >
         <div
           class="picker-sheet"
-          role="listbox"
           tabindex="-1"
           (click)="$event.stopPropagation()"
+          (keydown.escape)="close()"
           (keydown)="$event.stopPropagation()"
         >
-          <header>
-            <strong>{{ sheetTitle() || label() || 'Choose an option' }}</strong>
-            <button type="button" aria-label="Close options" (click)="close()">
-              <svg lucideIcon="x" aria-hidden="true"></svg>
-            </button>
-          </header>
-          @for (option of options(); track option.value) {
-            <button
-              type="button"
-              class="picker-option"
-              [class.selected]="option.value === value()"
-              [disabled]="option.disabled"
-              role="option"
-              [attr.aria-selected]="option.value === value()"
-              (click)="select(option.value)"
-            >
-              @if (option.icon) {
-                <span
-                  class="option-icon"
-                  [style.--option-colour]="option.colour || 'var(--accent)'"
-                  aria-hidden="true"
-                >
-                  <svg [lucideIcon]="option.icon"></svg>
-                </span>
-              }
-              <span class="option-copy">
-                <strong>{{ option.label }}</strong>
-                @if (option.detail) {
-                  <small>{{ option.detail }}</small>
+          <div class="picker-top">
+            <header>
+              <strong>{{ sheetTitle() || label() || 'Choose an option' }}</strong>
+              <button type="button" aria-label="Close options" (click)="close()">
+                <svg lucideIcon="x" aria-hidden="true"></svg>
+              </button>
+            </header>
+            @if (searchable()) {
+              <label class="picker-search">
+                <span class="visually-hidden">Search {{ label().toLowerCase() || 'options' }}</span>
+                <svg lucideIcon="search" aria-hidden="true"></svg>
+                <input
+                  #searchInput
+                  type="search"
+                  autocomplete="off"
+                  [placeholder]="searchPlaceholder()"
+                  [value]="searchQuery()"
+                  (input)="updateSearch($event)"
+                />
+              </label>
+            }
+          </div>
+          <div class="picker-options" role="listbox" [attr.aria-label]="label()">
+            @for (option of filteredOptions(); track option.value) {
+              <button
+                type="button"
+                class="picker-option"
+                [class.selected]="option.value === value()"
+                [disabled]="option.disabled"
+                role="option"
+                [attr.aria-selected]="option.value === value()"
+                (click)="select(option.value)"
+              >
+                @if (option.icon) {
+                  <span
+                    class="option-icon"
+                    [style.--option-colour]="option.colour || 'var(--accent)'"
+                    aria-hidden="true"
+                  >
+                    <svg [lucideIcon]="option.icon"></svg>
+                  </span>
                 }
-              </span>
-              @if (option.value === value()) {
-                <svg class="option-check" lucideIcon="circle-check" aria-hidden="true"></svg>
-              }
-            </button>
-          }
+                <span class="option-copy">
+                  <strong>{{ option.label }}</strong>
+                  @if (option.detail) {
+                    <small>{{ option.detail }}</small>
+                  }
+                </span>
+                @if (option.value === value()) {
+                  <svg class="option-check" lucideIcon="circle-check" aria-hidden="true"></svg>
+                }
+              </button>
+            } @empty {
+              <p class="picker-empty" role="status">No matching options</p>
+            }
+          </div>
         </div>
       </div>
     }
@@ -118,27 +138,41 @@ export class AppSelectPicker {
   readonly placeholder = input('Choose an option');
   readonly hint = input('');
   readonly disabled = input(false);
+  readonly searchable = input(false);
+  readonly searchPlaceholder = input('Search options');
   readonly options = input.required<readonly AppSelectOption[]>();
   readonly valueChange = output<string>();
   readonly open = signal(false);
+  readonly searchQuery = signal('');
   private readonly trigger = viewChild.required<ElementRef<HTMLButtonElement>>('trigger');
+  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
 
   readonly selectedOption = computed(() =>
     this.options().find((option) => option.value === this.value()),
   );
   readonly selectedLabel = computed(() => this.selectedOption()?.label ?? this.placeholder());
+  readonly filteredOptions = computed(() => {
+    const query = normalizeSearch(this.searchQuery());
+    if (!query) return this.options();
+    return this.options().filter((option) =>
+      normalizeSearch([option.label, option.detail ?? '', option.value].join(' ')).includes(query),
+    );
+  });
 
   constructor() {
     effect(() => {
       if (!this.open()) return;
-      window.setTimeout(() =>
-        document.querySelector<HTMLElement>('.picker-sheet .picker-option.selected')?.focus(),
-      );
+      window.setTimeout(() => {
+        if (this.searchable()) this.searchInput()?.nativeElement.focus();
+        else document.querySelector<HTMLElement>('.picker-sheet .picker-option.selected')?.focus();
+      });
     });
   }
 
   show(): void {
-    if (!this.disabled()) this.open.set(true);
+    if (this.disabled()) return;
+    this.searchQuery.set('');
+    this.open.set(true);
   }
 
   close(): void {
@@ -150,4 +184,16 @@ export class AppSelectPicker {
     this.valueChange.emit(value);
     this.close();
   }
+
+  updateSearch(event: Event): void {
+    this.searchQuery.set((event.target as HTMLInputElement).value);
+  }
+}
+
+function normalizeSearch(value: string): string {
+  return value
+    .trim()
+    .toLocaleLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }
