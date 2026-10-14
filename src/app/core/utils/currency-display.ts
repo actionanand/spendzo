@@ -1,4 +1,4 @@
-import { AppSettings, DEFAULT_SETTINGS } from '../models/finance.models';
+import { AppSettings, DEFAULT_SETTINGS, isPaymentMethod } from '../models/finance.models';
 
 export interface CountryCurrencyOption {
   readonly countryCode: string;
@@ -144,6 +144,9 @@ export function normalizeAppSettings(settings?: Partial<AppSettings> | null): Ap
     ...settings,
     defaultCountryCode: country?.countryCode ?? 'IN',
     defaultCurrencyCode: requestedCurrency,
+    defaultPaymentMethod: isPaymentMethod(settings?.defaultPaymentMethod)
+      ? settings.defaultPaymentMethod
+      : DEFAULT_SETTINGS.defaultPaymentMethod,
   };
 }
 
