@@ -20,7 +20,12 @@ describe('currency display utilities', () => {
     const settings = normalizeAppSettings({ budgetCycleStartDay: 25 });
     expect(settings.defaultCountryCode).toBe('IN');
     expect(settings.defaultCurrencyCode).toBe('INR');
+    expect(settings.defaultPaymentMethod).toBe('Cash');
     expect(settings.budgetCycleStartDay).toBe(25);
+  });
+
+  it('keeps a supported default payment method', () => {
+    expect(normalizeAppSettings({ defaultPaymentMethod: 'UPI' }).defaultPaymentMethod).toBe('UPI');
   });
 
   it('uses a symbol where Intl provides one', () => {

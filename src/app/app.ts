@@ -4,7 +4,14 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Capacitor } from '@capacitor/core';
 import { LucideDynamicIcon } from '@lucide/angular';
 import { ExpenseExportFormat, ExpenseExportRange } from './core/models/export.models';
-import { Expense, ExpenseCategory, ThemePreference } from './core/models/finance.models';
+import {
+  Expense,
+  ExpenseCategory,
+  isPaymentMethod,
+  PAYMENT_METHODS,
+  PaymentMethod,
+  ThemePreference,
+} from './core/models/finance.models';
 import { BackupPreview, DataPortabilityService } from './core/services/data-portability.service';
 import { ExpenseExportService } from './core/services/expense-export.service';
 import { SecurityService } from './core/services/security.service';
@@ -131,7 +138,7 @@ export class App {
     transactionDate: [localDateKey(), [Validators.required]],
     title: [''],
     notes: [''],
-    paymentMethod: [''],
+    paymentMethod: ['Cash'],
     tags: [''],
   });
 
@@ -359,6 +366,10 @@ export class App {
     { value: 'dumbbell', label: 'Fitness', icon: 'dumbbell' },
     { value: 'shapes', label: 'Other', icon: 'shapes' },
   ];
+
+  protected readonly paymentMethodOptions: readonly AppSelectOption[] = PAYMENT_METHODS.map(
+    (method) => ({ value: method, label: method }),
+  );
 
   protected readonly duplicatePolicyOptions: readonly AppSelectOption[] = [
     { value: 'keep-existing', label: 'Keep existing' },
@@ -608,7 +619,7 @@ export class App {
       transactionDate: expense?.transactionDate ?? localDateKey(),
       title: expense?.title ?? '',
       notes: expense?.notes ?? '',
-      paymentMethod: expense?.paymentMethod ?? '',
+      paymentMethod: this.paymentMethodForForm(expense?.paymentMethod),
       tags: expense?.tags.join(', ') ?? '',
     });
     this.dialog.set('expense');
@@ -627,7 +638,7 @@ export class App {
       transactionDate: value.transactionDate,
       title: value.title.trim() || undefined,
       notes: value.notes.trim() || undefined,
-      paymentMethod: value.paymentMethod.trim() || undefined,
+      paymentMethod: this.paymentMethodForForm(value.paymentMethod),
       tags: value.tags
         .split(',')
         .map((tag) => tag.trim())
@@ -809,6 +820,18 @@ export class App {
     const value = Number(raw);
     await this.store.updateSettings({ budgetCycleStartDay: value });
     this.showMessage('Budget cycle updated. Historical expenses were left unchanged.');
+  }
+
+  protected async changeDefaultPaymentMethod(raw: string): Promise<void> {
+    if (!isPaymentMethod(raw)) return;
+    await this.store.updateSettings({ defaultPaymentMethod: raw });
+    this.showMessage('Default payment method updated.');
+  }
+
+  protected changeExpensePaymentMethod(value: string): void {
+    if (!isPaymentMethod(value)) return;
+    this.expenseForm.controls.paymentMethod.setValue(value);
+    this.expenseForm.controls.paymentMethod.markAsDirty();
   }
 
   protected async changeAutoLock(raw: string): Promise<void> {
@@ -1239,6 +1262,12 @@ export class App {
 
   private showMessage(value: string): void {
     this.snackbar.show(value);
+  }
+
+  private paymentMethodForForm(paymentMethod?: string): PaymentMethod {
+    return isPaymentMethod(paymentMethod)
+      ? paymentMethod
+      : this.store.settings().defaultPaymentMethod;
   }
 
   private requestConfirmation(request: ConfirmationRequest): void {

@@ -1,5 +1,12 @@
 export type ThemePreference = 'light' | 'dark' | 'system';
 export type AutoLockMinutes = 0 | 1 | 5 | 15 | 30 | null;
+export type PaymentMethod = 'Cash' | 'UPI' | 'Card';
+
+export const PAYMENT_METHODS: readonly PaymentMethod[] = ['Cash', 'UPI', 'Card'];
+
+export function isPaymentMethod(value: string | undefined): value is PaymentMethod {
+  return PAYMENT_METHODS.some((method) => method === value);
+}
 
 export interface Expense {
   readonly id: string;
@@ -69,6 +76,7 @@ export interface AppSettings {
   readonly lockInBackground: boolean;
   readonly warningThresholdPercentage: number;
   readonly copyPreviousBudget: boolean;
+  readonly defaultPaymentMethod: PaymentMethod;
 }
 
 export interface FinanceSnapshot {
@@ -117,6 +125,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   lockInBackground: true,
   warningThresholdPercentage: 80,
   copyPreviousBudget: false,
+  defaultPaymentMethod: 'Cash',
 };
 
 const CATEGORY_SEEDS = [

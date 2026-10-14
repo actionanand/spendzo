@@ -942,6 +942,29 @@
               </div>
             </section>
 
+            <section class="settings-section" aria-labelledby="payment-settings-title">
+              <header>
+                <span><svg lucideIcon="wallet-cards" aria-hidden="true"></svg></span>
+                <div>
+                  <h2 id="payment-settings-title">Payment method</h2>
+                  <p>Choose the method preselected when you add an expense.</p>
+                </div>
+              </header>
+              <div class="select-setting">
+                <span>
+                  <strong>Default payment method</strong>
+                  <small>You can change it for each expense</small>
+                </span>
+                <app-select-picker
+                  label="Default payment method"
+                  sheetTitle="Choose default payment method"
+                  [options]="paymentMethodOptions"
+                  [value]="store.settings().defaultPaymentMethod"
+                  (valueChange)="changeDefaultPaymentMethod($event)"
+                />
+              </div>
+            </section>
+
             <section class="settings-section" aria-labelledby="budget-settings-title">
               <header>
                 <span><svg lucideIcon="calendar-range" aria-hidden="true"></svg></span>
@@ -1125,10 +1148,13 @@
               (valueChange)="changeExpenseCategory($event)"
             />
             <label><span>Date</span><input type="date" formControlName="transactionDate" /></label>
-            <label
-              ><span>Payment method <small>Optional</small></span
-              ><input formControlName="paymentMethod" placeholder="UPI, cash, card"
-            /></label>
+            <app-select-picker
+              label="Payment method"
+              sheetTitle="Payment method"
+              [options]="paymentMethodOptions"
+              [value]="expenseForm.controls.paymentMethod.value"
+              (valueChange)="changeExpensePaymentMethod($event)"
+            />
           </div>
           <label
             ><span>Merchant or title <small>Optional</small></span

@@ -140,7 +140,17 @@ export const FinanceStore = signalStore(
         try {
           const saved = await repository.load();
           if (saved) {
-            patchState(store, { ...saved, settings: normalizeAppSettings(saved.settings) });
+            const expenses = saved.expenses.map((expense) => ({
+              ...expense,
+              // Payment methods were optional before this setting existed. Keep every older
+              // transaction trackable by assigning the original default, Cash.
+              paymentMethod: expense.paymentMethod || 'Cash',
+            }));
+            patchState(store, {
+              ...saved,
+              expenses,
+              settings: normalizeAppSettings(saved.settings),
+            });
           }
           patchState(store, { initialized: true, error: '' });
         } catch {
@@ -297,7 +307,14 @@ export const FinanceStore = signalStore(
         await persist();
       },
       async replaceSnapshot(snapshot: FinanceSnapshot): Promise<void> {
-        patchState(store, { ...snapshot, settings: normalizeAppSettings(snapshot.settings) });
+        patchState(store, {
+          ...snapshot,
+          expenses: snapshot.expenses.map((expense) => ({
+            ...expense,
+            paymentMethod: expense.paymentMethod || 'Cash',
+          })),
+          settings: normalizeAppSettings(snapshot.settings),
+        });
         await persist();
       },
       snapshot(): FinanceSnapshot {
